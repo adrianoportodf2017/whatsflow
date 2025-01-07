@@ -23,30 +23,32 @@ export const getNextScreen = async (decryptedBody) => {
   // Inicialização do fluxo
   if (action === "INIT") {
     return {
-      screen: "TELA_BOAS_VINDAS",
-      data: {},
-      layout: {
-        type: "SingleColumnLayout",
-        children: [
-          {
-            type: "TextHeading",
-            text: "Olá, Mundo"
-          },
-          {
-            type: "TextBody",
-            text: "Vamos começar a construir coisas!"
-          },
-          {
-            type: "Footer",
-            label: "Concluir",
-            "on-click-action": {
-              name: "complete",
-              payload: {}
-            }
-          }
-        ]
-      }
+      screen: "CADASTRO",
+      data: {}
     };
+  }
+
+  // Processamento do formulário
+  if (action === "data_exchange") {
+    switch (screen) {
+      case "CADASTRO":
+        // Pega os dados do formulário
+        const formData = data.form_responses;
+        
+        // Aqui você pode adicionar sua lógica para salvar os dados
+        // Por exemplo, salvar em um banco de dados
+        console.log("Dados do formulário:", formData);
+
+        // Redireciona para tela de sucesso
+        return {
+          screen: "SUCESSO",
+          data: {}
+        };
+
+      default:
+        console.error("Tela não encontrada:", screen);
+        throw new Error("Tela não encontrada");
+    }
   }
 
   console.error("Requisição não tratada:", decryptedBody);
