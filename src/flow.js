@@ -28,27 +28,23 @@ export const getNextScreen = async (decryptedBody) => {
     };
   }
 
-  // Processamento do formulário
-  if (action === "data_exchange") {
-    switch (screen) {
-      case "CADASTRO":
-        // Pega os dados do formulário
-        const formData = data.form_responses;
-        
-        // Aqui você pode adicionar sua lógica para salvar os dados
-        // Por exemplo, salvar em um banco de dados
-        console.log("Dados do formulário:", formData);
+  // Processamento do formulário de cadastro
+  if (action === "complete" && screen === "CADASTRO") {
+    const { nome, email, telefone } = data;
 
-        // Redireciona para tela de sucesso
-        return {
-          screen: "SUCESSO",
-          data: {}
-        };
+    // Lógica para salvar os dados recebidos
+    console.log("Dados do cadastro recebidos:", { nome, email, telefone });
 
-      default:
-        console.error("Tela não encontrada:", screen);
-        throw new Error("Tela não encontrada");
-    }
+    // Retorno de sucesso após o processamento
+    return {
+      screen: "TELA_SUCESSO",
+      data: {
+        message: "Cadastro concluído com sucesso!",
+        nome,
+        email,
+        telefone
+      }
+    };
   }
 
   console.error("Requisição não tratada:", decryptedBody);
