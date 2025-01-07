@@ -29,7 +29,7 @@ export const getNextScreen = async (decryptedBody) => {
   }
 
   // Processamento do formulário de cadastro
-  if (action === "complete" && screen === "CADASTRO") {
+  if (action === "complete") {
     const { nome, email, telefone } = data;
 
     // Lógica para salvar os dados recebidos
