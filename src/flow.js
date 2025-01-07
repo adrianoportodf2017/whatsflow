@@ -3,6 +3,8 @@ export const getNextScreen = async (decryptedBody) => {
 
   // Verificação de saúde do sistema
   if (action === "ping") {
+    console.log("teste de integracai");
+
     return {
       data: {
         status: "active",
@@ -12,6 +14,8 @@ export const getNextScreen = async (decryptedBody) => {
 
   // Tratamento de erros do cliente
   if (data?.error) {
+    console.log("erro encontrado");
+
     console.warn("Erro do cliente:", data);
     return {
       data: {
@@ -22,6 +26,8 @@ export const getNextScreen = async (decryptedBody) => {
 
   // Inicialização do fluxo
   if (action === "INIT") {
+    console.log("iniciando Cadastro");
+
     return {
       screen: "CADASTRO",
       data: {}
@@ -29,7 +35,7 @@ export const getNextScreen = async (decryptedBody) => {
   }
 
   // Processamento do formulário de cadastro
-  if (action === "complete") {
+  if (action == "complete") {
     const { nome, email, telefone } = data;
 
     // Lógica para salvar os dados recebidos
