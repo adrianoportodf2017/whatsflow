@@ -1,8 +1,7 @@
 export const getNextScreen = async (decryptedBody) => {
   const { screen, data, action, flow_token } = decryptedBody;
 
-  console.log("💬 Recebendo request:", decryptedBody);
-
+  // Verificação de saúde do sistema
   if (action === "ping") {
     return {
       data: {
@@ -11,8 +10,9 @@ export const getNextScreen = async (decryptedBody) => {
     };
   }
 
+  // Tratamento de erros do cliente
   if (data?.error) {
-    console.warn("⚠️ Erro do cliente:", data);
+    console.warn("Erro do cliente:", data);
     return {
       data: {
         acknowledged: true,
@@ -20,38 +20,38 @@ export const getNextScreen = async (decryptedBody) => {
     };
   }
 
+  // Inicialização do fluxo
   if (action === "INIT") {
-    console.log("🟢 Iniciando flow");
     return {
       screen: "CADASTRO",
       data: {}
     };
   }
 
+  // Processamento do formulário
   if (action === "data_exchange") {
     switch (screen) {
       case "CADASTRO":
-        // data.trigger será 'submit_form'
-        console.log("📝 Trigger recebido:", data.trigger);
+        // Pega os dados do formulário
+        const formData = data.form_responses;
         
-        // Os dados do formulário devem estar em data.form_data
-        const formData = data.form_data || {};
-        console.log("📝 Dados do formulário:", formData);
-        
+        // Aqui você pode adicionar sua lógica para salvar os dados
+        // Por exemplo, salvar em um banco de dados
+        console.log("Dados do formulário:", formData);
+
         // Redireciona para tela de sucesso
-        console.log("✅ Redirecionando para sucesso");
         return {
           screen: "SUCESSO",
           data: {}
         };
 
       default:
-        console.error("❌ Tela não encontrada:", screen);
+        console.error("Tela não encontrada:", screen);
         throw new Error("Tela não encontrada");
     }
   }
 
-  console.error("❌ Requisição não tratada:", decryptedBody);
+  console.error("Requisição não tratada:", decryptedBody);
   throw new Error(
     "Requisição não tratada. Verifique se você está tratando a ação e tela corretas."
   );
