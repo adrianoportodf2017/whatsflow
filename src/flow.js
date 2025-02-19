@@ -214,7 +214,7 @@ export const getNextScreen = async (decryptedBody) => {
         const appointment = `${departmentName} at ${locationName}
 ${dateName} at ${data.time}`;
 
-        const details = `Name: ${data.name}
+        const details = `Nome do usuario: ${data.name}
 Email: ${data.email}
 Phone: ${data.phone}
 "${data.more_details}"`;
