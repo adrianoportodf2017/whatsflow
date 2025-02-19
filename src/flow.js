@@ -158,10 +158,10 @@ export const getNextScreen = async (decryptedBody) => {
   }
 
   // handle initial request when opening the flow and display APPOINTMENT screen
-  if (action == "INIT") {
+  if (action == "init") {
     return {
       data: {
-        status: "active",
+        status: "true",
       },
     };
   }
