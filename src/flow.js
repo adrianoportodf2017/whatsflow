@@ -159,6 +159,10 @@ export const getNextScreen = async (decryptedBody) => {
 
   // handle initial request when opening the flow and display APPOINTMENT screen
   if (action === "INIT") {
+    return true;   
+  }
+
+  if (action === "AGENDAMENTO") {
     return {
       ...SCREEN_RESPONSES.APPOINTMENT,
       data: {
