@@ -18,7 +18,15 @@ const SCREEN_RESPONSES = {
   },
   ENDERECO: {
     screen: "ENDERECO",
-    data: {}
+    data: {
+      estados: [
+        { id: "SP", title: "São Paulo" },
+        { id: "RJ", title: "Rio de Janeiro" },
+        { id: "MG", title: "Minas Gerais" },
+        { id: "RS", title: "Rio Grande do Sul" },
+        { id: "PR", title: "Paraná" }
+      ]
+    }
   },
   CONFIRMACAO: {
     screen: "CONFIRMACAO",
