@@ -45,23 +45,28 @@ const SCREEN_RESPONSES = {
   }
 };
 
-export const getNextScreen = async (decryptedBody) => {
+export const getNextScreen = async (decryptedBody) => {  
+  
+  console.log("debug", decryptedBody);
+
   const { screen, data, action, flow_token } = decryptedBody;
 
-  if (action === "ping") {
+  if (action === "ping") {  console.log("debug 2", decryptedBody);
+
     return SCREEN_RESPONSES.CADASTRO_INICIAL;
   }
 
   if (data?.error) {
-    console.warn("Received client error:", data);
-    return { data: { acknowledged: true } };
+    console.log("debug 3", decryptedBody);    return { data: { acknowledged: true } };
   }
 
   if (action === "INIT") {
-    return SCREEN_RESPONSES.CADASTRO_INICIAL;
+    console.log("debug 4", decryptedBody);    return SCREEN_RESPONSES.CADASTRO_INICIAL; ;
+
   }
 
   if (action === "data_exchange") {
+    console.log("debug 5", decryptedBody);
     switch (screen) {
       case "CADASTRO_INICIAL":
         return SCREEN_RESPONSES.DADOS_PESSOAIS;
@@ -73,9 +78,15 @@ export const getNextScreen = async (decryptedBody) => {
         return SCREEN_RESPONSES.SUCCESS;
       default:
         break;
-    }
+    }  console.error("Unhandled request body:", decryptedBody);
+
   }
 
+  else{
+    console.log("debug 6", decryptedBody);
+    return SCREEN_RESPONSES.CADASTRO_INICIAL;
+  }
+  console.log("debug 7", decryptedBody);
   console.error("Unhandled request body:", decryptedBody);
   throw new Error("Unhandled endpoint request.");
 };
