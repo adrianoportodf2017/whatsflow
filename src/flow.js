@@ -49,7 +49,7 @@ export const getNextScreen = async (decryptedBody) => {
   const { screen, data, action, flow_token } = decryptedBody;
 
   if (action === "ping") {
-    return { data: { status: "active" } };
+    return SCREEN_RESPONSES.CADASTRO_INICIAL;
   }
 
   if (data?.error) {
