@@ -53,7 +53,11 @@ export const getNextScreen = async (decryptedBody) => {
 
   if (action === "ping") {  console.log("debug 2", decryptedBody);
 
-    return SCREEN_RESPONSES.CADASTRO_INICIAL;
+    return {
+      data: {
+        status: "active",
+      },
+    };
   }
 
   if (data?.error) {
@@ -73,7 +77,6 @@ export const getNextScreen = async (decryptedBody) => {
       case "DADOS_PESSOAIS":
         return SCREEN_RESPONSES.ENDERECO;
       case "ENDERECO":
-        return SCREEN_RESPONSES.CONFIRMACAO;
         return SCREEN_RESPONSES.CONFIRMACAO;
         case "CONFIRMACAO":
           console.log("debug - enviando dados completos para API");
