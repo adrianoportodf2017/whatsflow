@@ -74,19 +74,41 @@ export const getNextScreen = async (decryptedBody) => {
         return SCREEN_RESPONSES.ENDERECO;
       case "ENDERECO":
         return SCREEN_RESPONSES.CONFIRMACAO;
-      case "CONFIRMACAO":
-        return SCREEN_RESPONSES.SUCCESS;
-      default:
-        break;
-    }  console.error("Unhandled request body:", decryptedBody);
-
-  }
-
-  else{
+        return SCREEN_RESPONSES.CONFIRMACAO;
+        case "CONFIRMACAO":
+          console.log("debug - enviando dados completos para API");
+  
+          try {
+            const response = await fetch(
+              "https://api-cadastro-flow.agenciatecnet.com.br/index.php",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  apikey: "f79a4875d574dfb7aae1b443b8a56c64",
+                },
+                body: JSON.stringify(data), // Enviando todo o objeto data
+              }
+            );
+  
+            const result = await response.json();
+            console.log("debug - resposta da API:", result);
+  
+            if (!response.ok) {
+              throw new Error(`Erro na API: ${result.message || response.status}`);
+            }
+  
+            return SCREEN_RESPONSES.SUCCESS;
+          } catch (error) {
+            console.error("Erro ao enviar dados para a API:", error);
+            return { data: { error: "Falha ao processar o cadastro." } };
+          }
+  
+        default:
+          break;
+      }
+    }
+  
     console.log("debug 6", decryptedBody);
     return SCREEN_RESPONSES.CADASTRO_INICIAL;
-  }
-  console.log("debug 7", decryptedBody);
-  console.error("Unhandled request body:", decryptedBody);
-  throw new Error("Unhandled endpoint request.");
-};
+  };
