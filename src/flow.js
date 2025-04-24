@@ -55,7 +55,8 @@ export const getNextScreen = async (decryptedBody) => {
       case "IDENTIFICACAO_CPF": {
         const cpfValido = [
           "12345678900",
-          "98765432100"
+          "98765432100",
+          "74397912076"
         ];
         const cpf = data?.cpf;
 
