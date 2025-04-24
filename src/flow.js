@@ -1,5 +1,5 @@
 /**
- * flow.js adaptado para o processo de votação do Instituto Cooperforte
+ * flow.js adaptado e corrigido para o processo de votação do Instituto Cooperforte
  */
 
 const SCREEN_RESPONSES = {
@@ -53,70 +53,80 @@ export const getNextScreen = async (decryptedBody) => {
   if (action === "data_exchange") {
     switch (screen) {
       case "IDENTIFICACAO_CPF": {
-        const cpfValido = [
-          "12345678900",
-          "98765432100",
-          "74397912076"
-        ];
         const cpf = data?.cpf;
 
-        if (!cpfValido.includes(cpf)) {
+        try {
+          const response = await fetch(
+            `https://script.google.com/macros/s/AKfycbzb7_mbiFNqQd47FG01bbOH3eDpgD0eNBjopjCgQ6K5b9QDtEhgJRY9YxWiK2EIosd0/exec?cpf=${cpf}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              }
+            }
+          );
+
+          const result = await response.json();
+          console.log("debug - resposta da API:", result);
+
+          if (result.encontrado == false) {
+            return {
+              screen: "IDENTIFICACAO_CPF",
+              data: {
+                error: true,
+                error_message: result.mensagem
+              }
+            };
+          }
+
+          if (cpf === "98765432100") {
+            return {
+              screen: "USUARIO_JA_VOTOU",
+              data: {
+                cpf,
+                hash: "VOTO1234",
+                candidatos: []
+              }
+            };
+          }
+
+          if (cpf === "74397912076") {
+            return {
+              screen: "SELECIONA_CANDIDATOS",
+              data: {
+                cpf,
+                nome: "EVELINE MONICA DE AZEVEDO GUIMARAES",
+                texto_nome: "👋 Olá, EVELINE MONICA DE AZEVEDO GUIMARAES! ",
+                candidatos: SCREEN_RESPONSES.SELECIONA_CANDIDATOS.data.candidatos
+              }
+            };
+          }
+
+          return SCREEN_RESPONSES.SELECIONA_CANDIDATOS;
+
+        } catch (error) {
+          console.error("Erro na requisição de verificação de CPF:", error);
           return {
             screen: "IDENTIFICACAO_CPF",
             data: {
               error: true,
-              error_message: "CPF não encontrado."
+              error_message: "Erro ao verificar o CPF. Tente novamente."
             }
           };
         }
-
-        if (cpf === "98765432100") {
-          return {
-            screen: "USUARIO_JA_VOTOU",
-            data: {
-              cpf,
-              hash: "VOTO1234",
-              candidatos: []
-            }
-          };
-        }
-
-        if (cpf === "74397912076") {
-          return {
-            screen: "SELECIONA_CANDIDATOS",
-            data: {
-              cpf,
-              nome: "EVELINE MONICA DE AZEVEDO GUIMARAES",
-              texto_nome: "👋 Olá, EVELINE MONICA DE AZEVEDO GUIMARAES! ",
-
-              candidatos: [
-                { id: "1", title: "Elvira Cruvinel Ferreira" },
-                { id: "2", title: "Magno Soares dos Santos" },
-                { id: "3", title: "Maria de Jesus Demétrio Gaia" },
-                { id: "4", title: "Maurício Teixeira da Costa" },
-                { id: "5", title: "Sandra Regina de Miranda" }
-              ]
-            }
-          };
-        }
-
-        return SCREEN_RESPONSES.SELECIONA_CANDIDATOS;
       }
+
       case "SELECIONA_CANDIDATOS": {
         const { cpf, candidatos } = data;
-      
-        const mapaCandidatos = {
-          "1": "Elvira Cruvinel Ferreira",
-          "2": "Magno Soares dos Santos",
-          "3": "Maria de Jesus Demétrio Gaia",
-          "4": "Maurício Teixeira da Costa",
-          "5": "Sandra Regina de Miranda"
-        };
-      
+        const mapaCandidatos = SCREEN_RESPONSES.SELECIONA_CANDIDATOS.data.candidatos.reduce((acc, curr) => {
+          acc[curr.id] = curr.title;
+          return acc;
+        }, {});
+
         const nomesSelecionados = (candidatos || [])
           .map(id => `${id} - ${mapaCandidatos[id]}`)
           .filter(Boolean);
-      
+
         return {
           screen: "CONFIRMACAO_VOTO",
           data: {
@@ -127,8 +137,6 @@ export const getNextScreen = async (decryptedBody) => {
           }
         };
       }
-      
-      
 
       case "CONFIRMACAO_VOTO": {
         const { cpf, candidatos } = data;
