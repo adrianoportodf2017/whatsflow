@@ -69,13 +69,14 @@ export const getNextScreen = async (decryptedBody) => {
 
         if (!cpfValido.includes(cpf)) {
           console.log("[Flow] CPF não encontrado:", cpf);
-         return {
-          "screen": "IDENTIFICACAO_CPF",
-          "data": {
-            "error": true,
-            "error_message": "CPF não encontrado."
-          }
-        };
+          return {
+            flow_token: decryptedBody.flow_token,
+            status: "fail",
+            on_failure: {
+              type: "show_message",
+              message: "CPF não encontrado."
+            }
+          };
         }
 
         if (cpf === "98765432100") {
