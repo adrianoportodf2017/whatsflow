@@ -87,6 +87,8 @@ export const getNextScreen = async (decryptedBody) => {
             data: {
               cpf,
               nome: "EVELINE MONICA DE AZEVEDO GUIMARAES",
+              texto_nome: "👋 Olá, EVELINE MONICA DE AZEVEDO GUIMARAES! ",
+
               candidatos: [
                 { id: "1", title: "Elvira Cruvinel Ferreira" },
                 { id: "2", title: "Magno Soares dos Santos" },
