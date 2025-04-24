@@ -114,7 +114,7 @@ export const getNextScreen = async (decryptedBody) => {
         };
       
         const nomesSelecionados = (candidatos || [])
-          .map(id => mapaCandidatos[id])
+          .map(id => `${id} - ${mapaCandidatos[id]}`)
           .filter(Boolean);
       
         return {
@@ -123,10 +123,11 @@ export const getNextScreen = async (decryptedBody) => {
             cpf,
             texto_confirmacao: "Você selecionou:",
             candidatos_lista: nomesSelecionados.join(",\n"),
-            candidatos_id: candidatos
+            candidatos_id: candidatos.map(id => ({ id }))
           }
         };
       }
+      
       
 
       case "CONFIRMACAO_VOTO": {
