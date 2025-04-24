@@ -71,7 +71,7 @@ export const getNextScreen = async (decryptedBody) => {
 
         if (cpf === "98765432100") {
           return {
-            screen: "VOTO_FINALIZADO",
+            screen: "USUARIO_JA_VOTOU",
             data: {
               cpf,
               hash: "VOTO1234",
