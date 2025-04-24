@@ -94,7 +94,7 @@ export const getNextScreen = async (decryptedBody) => {
                 { id: "2", title: "Magno Soares dos Santos" },
                 { id: "3", title: "Maria de Jesus Demétrio Gaia" },
                 { id: "4", title: "Maurício Teixeira da Costa" },
-                { id: "5", title: "Adriano A. de O. Porto" }
+                { id: "5", title: "Sandra Regina de Miranda" }
               ]
             }
           };
