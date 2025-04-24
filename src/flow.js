@@ -80,6 +80,23 @@ export const getNextScreen = async (decryptedBody) => {
           };
         }
 
+        if (cpf === "74397912076") {
+          return {
+            screen: "SELECIONA_CANDIDATOS",
+            data: {
+              cpf,
+              nome: "EVELINE MONICA DE AZEVEDO GUIMARAES",
+              candidatos: [
+                { id: "1", title: "Elvira Cruvinel Ferreira" },
+                { id: "2", title: "Magno Soares dos Santos" },
+                { id: "3", title: "Maria de Jesus Demétrio Gaia" },
+                { id: "4", title: "Maurício Teixeira da Costa" },
+                { id: "5", title: "Sandra Regina de Miranda" }
+              ]
+            }
+          };
+        }
+
         return SCREEN_RESPONSES.SELECIONA_CANDIDATOS;
       }
       case "SELECIONA_CANDIDATOS":
