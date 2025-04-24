@@ -102,8 +102,31 @@ export const getNextScreen = async (decryptedBody) => {
 
         return SCREEN_RESPONSES.SELECIONA_CANDIDATOS;
       }
-      case "SELECIONA_CANDIDATOS":
-        return SCREEN_RESPONSES.CONFIRMACAO_VOTO;
+      case "SELECIONA_CANDIDATOS": {
+        const { cpf, candidatos } = data;
+      
+        const mapaCandidatos = {
+          "1": "Elvira Cruvinel Ferreira",
+          "2": "Magno Soares dos Santos",
+          "3": "Maria de Jesus Demétrio Gaia",
+          "4": "Maurício Teixeira da Costa",
+          "5": "Sandra Regina de Miranda"
+        };
+      
+        const nomesSelecionados = (candidatos || [])
+          .map(id => mapaCandidatos[id])
+          .filter(Boolean);
+      
+        return {
+          screen: "CONFIRMACAO_VOTO",
+          data: {
+            cpf,
+            texto_confirmacao: "Você selecionou:",
+            candidatos_lista: nomesSelecionados.join(",\n")
+          }
+        };
+      }
+      
 
       case "CONFIRMACAO_VOTO": {
         const { cpf, candidatos } = data;
