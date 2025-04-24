@@ -72,7 +72,8 @@ export const getNextScreen = async (decryptedBody) => {
          return {
           "screen": "IDENTIFICACAO_CPF",
           "data": {
-            "error": "CPF não encontrado."
+            "error": true,
+            "error_message": "CPF não encontrado."
           }
         };
         }
