@@ -122,7 +122,8 @@ export const getNextScreen = async (decryptedBody) => {
           data: {
             cpf,
             texto_confirmacao: "Você selecionou:",
-            candidatos_lista: nomesSelecionados.join(",\n")
+            candidatos_lista: nomesSelecionados.join(",\n"),
+            candidatos_id: candidatos
           }
         };
       }
