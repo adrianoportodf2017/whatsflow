@@ -23,8 +23,9 @@ const SCREEN_RESPONSES = {
     screen: "CONFIRMACAO_VOTO",
     data: {}
   },
-  VOTO_FINALIZADO: (cpf, candidatos_id, candidatos_nomes, hash) => {
-     return {
+  VOTO_FINALIZADO: (cpf, candidatos_id, candidatos_nomes, hashGerado) => {
+    const hash = hashGerado || Math.random().toString(36).substring(2, 8).toUpperCase();
+    return {
       screen: "VOTO_FINALIZADO",
       data: {
         cpf,
@@ -147,6 +148,7 @@ export const getNextScreen = async (decryptedBody) => {
         }, {});
 
         const nomesSelecionados = (candidatos_id || []).map(({ id }) => mapaCandidatos[id]).filter(Boolean);
+        let hashGerado = null;
 
         try {
           const response = await fetch(
@@ -165,11 +167,12 @@ export const getNextScreen = async (decryptedBody) => {
 
           const result = await response.json();
           console.log("debug - resposta POST finalização:", result);
+          hashGerado = result?.hash;
         } catch (error) {
           console.error("Erro ao enviar voto:", error);
         }
 
-        return SCREEN_RESPONSES.VOTO_FINALIZADO(cpf, candidatos_id, nomesSelecionados, result.hash);
+        return SCREEN_RESPONSES.VOTO_FINALIZADO(cpf, candidatos_id, nomesSelecionados, hashGerado);
       }
 
       default:
