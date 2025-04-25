@@ -79,7 +79,7 @@ export const getNextScreen = async (decryptedBody) => {
             };
           }
 
-          if (result.encontrado == true && result.encontrado == "Sim") {
+          if (result.encontrado == true && result.votou == "Sim") {
             return {
               screen: "USUARIO_JA_VOTOU",
               data: {
@@ -90,7 +90,7 @@ export const getNextScreen = async (decryptedBody) => {
             };
           }
 
-          if (result.encontrado == true && result.encontrado == "Não") {
+          if (result.encontrado == true && result.votou == "Não") {
             return {
               screen: "SELECIONA_CANDIDATOS",
               data: {
