@@ -23,14 +23,15 @@ const SCREEN_RESPONSES = {
     screen: "CONFIRMACAO_VOTO",
     data: {}
   },
-  VOTO_FINALIZADO: (cpf, candidatos) => {
+  VOTO_FINALIZADO: (cpf, candidatos_id, candidatos_nomes) => {
     const hash = Math.random().toString(36).substring(2, 8).toUpperCase();
     return {
       screen: "VOTO_FINALIZADO",
       data: {
         cpf,
         hash,
-        candidatos
+        candidatos_id,
+        candidatos_nomes
       }
     };
   }
@@ -139,8 +140,8 @@ export const getNextScreen = async (decryptedBody) => {
       }
 
       case "CONFIRMACAO_VOTO": {
-        const { cpf, candidatos } = data;
-        return SCREEN_RESPONSES.VOTO_FINALIZADO(cpf, candidatos);
+        const { cpf, candidatos_id, candidatos_nomes } = data;
+        return SCREEN_RESPONSES.VOTO_FINALIZADO(cpf, candidatos_id, candidatos_nomes);
       }
 
       default:
