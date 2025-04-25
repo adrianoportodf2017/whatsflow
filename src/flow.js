@@ -140,8 +140,37 @@ export const getNextScreen = async (decryptedBody) => {
       }
 
       case "CONFIRMACAO_VOTO": {
-        const { cpf, candidatos_id, candidatos_nomes } = data;
-        return SCREEN_RESPONSES.VOTO_FINALIZADO(cpf, candidatos_id, candidatos_nomes);
+        const { cpf, candidatos_id } = data;
+
+        const mapaCandidatos = SCREEN_RESPONSES.SELECIONA_CANDIDATOS.data.candidatos.reduce((acc, curr) => {
+          acc[curr.id] = curr.title;
+          return acc;
+        }, {});
+
+        const nomesSelecionados = (candidatos_id || []).map(({ id }) => mapaCandidatos[id]).filter(Boolean);
+
+        try {
+          const response = await fetch(
+            "https://script.google.com/macros/s/AKfycbznKlAy5Goy6a7XW_l7OzC1OinDuMx12CyD5QjaetruTFd1soEQ4TikV54jpKfW39M3/exec",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                cpf,
+                candidatos: nomesSelecionados
+              })
+            }
+          );
+
+          const result = await response.json();
+          console.log("debug - resposta POST finalização:", result);
+        } catch (error) {
+          console.error("Erro ao enviar voto:", error);
+        }
+
+        return SCREEN_RESPONSES.VOTO_FINALIZADO(cpf, candidatos_id, nomesSelecionados);
       }
 
       default:
