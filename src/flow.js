@@ -23,9 +23,8 @@ const SCREEN_RESPONSES = {
     screen: "CONFIRMACAO_VOTO",
     data: {}
   },
-  VOTO_FINALIZADO: (cpf, candidatos_id, candidatos_nomes) => {
-    const hash = Math.random().toString(36).substring(2, 8).toUpperCase();
-    return {
+  VOTO_FINALIZADO: (cpf, candidatos_id, candidatos_nomes, hash) => {
+     return {
       screen: "VOTO_FINALIZADO",
       data: {
         cpf,
@@ -170,7 +169,7 @@ export const getNextScreen = async (decryptedBody) => {
           console.error("Erro ao enviar voto:", error);
         }
 
-        return SCREEN_RESPONSES.VOTO_FINALIZADO(cpf, candidatos_id, nomesSelecionados);
+        return SCREEN_RESPONSES.VOTO_FINALIZADO(cpf, candidatos_id, nomesSelecionados, result.hash);
       }
 
       default:
