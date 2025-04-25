@@ -80,7 +80,7 @@ export const getNextScreen = async (decryptedBody) => {
             };
           }
 
-          if (result.encontrado == true && result.votou == "Sim") {
+          if (result.encontrado == true && result.votou == "sim") {
             return {
               screen: "USUARIO_JA_VOTOU",
               data: {
