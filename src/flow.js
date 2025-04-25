@@ -79,24 +79,24 @@ export const getNextScreen = async (decryptedBody) => {
             };
           }
 
-          if (cpf === "98765432100") {
+          if (result.encontrado == true && result.encontrado == "Sim") {
             return {
               screen: "USUARIO_JA_VOTOU",
               data: {
                 cpf,
-                hash: "VOTO1234",
+                hash: result.hash,
                 candidatos: []
               }
             };
           }
 
-          if (cpf === "74397912076") {
+          if (result.encontrado == true && result.encontrado == "Não") {
             return {
               screen: "SELECIONA_CANDIDATOS",
               data: {
                 cpf,
-                nome: "EVELINE MONICA DE AZEVEDO GUIMARAES",
-                texto_nome: "👋 Olá, EVELINE MONICA DE AZEVEDO GUIMARAES! ",
+                nome: result.nome,
+                texto_nome: "👋 Olá, "+result.nome +"!",
                 candidatos: SCREEN_RESPONSES.SELECIONA_CANDIDATOS.data.candidatos
               }
             };
