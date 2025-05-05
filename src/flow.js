@@ -65,22 +65,21 @@ export const getNextScreen = async (decryptedBody) => {
     };
 
     const dadosMapeados = {
-      cpf: data.cpf,
-      profile_name: profile_name,
-      wa_id: wa_id,
-      nota_processo: mapas.nota_processo?.[data.avaliacao_geral] || data.avaliacao_geral,
-      clareza_info: mapas.clareza_info?.[data.clareza_info] || data.clareza_info,
-      facilidade_uso: mapas.facilidade_uso?.[data.facilidade_uso] || data.facilidade_uso,
-      teve_problema: mapas.teve_problema?.[data.problema_tecnico] || data.problema_tecnico,
-      qual_problema: data.descricao_problema || "",
-      tempo_votacao: mapas.tempo_votacao?.[data.tempo_votacao] || data.tempo_votacao,
-      receber_infos: mapas.receber_infos?.[data.receber_info] || data.receber_info,
-      comentario: data.sugestao || "",
-      canal_resposta: "WhatsApp",
-      aceitou_optin: mapas.aceitou_optin?.[data.optin] || data.optin,
-      campanha_id: data.campanha_id || "avaliacao_2025",
-      versao_flow: data.versao_flow || "v1"
-    };
+  wa_id: wa_id,
+  profile_name: profile_name,
+  nota_processo: mapas.nota_processo?.[data.avaliacao_geral] || data.avaliacao_geral,
+  clareza_info: mapas.clareza_info?.[data.clareza_info] || data.clareza_info,
+  facilidade_uso: mapas.facilidade_uso?.[data.facilidade_uso] || data.facilidade_uso,
+  teve_problema: mapas.teve_problema?.[data.problema_tecnico] || data.problema_tecnico,
+  qual_problema: data.descricao_problema || "",
+  tempo_votacao: mapas.tempo_votacao?.[data.tempo_votacao] || data.tempo_votacao,
+  receber_infos: mapas.receber_infos?.[data.receber_info] || data.receber_info,
+  comentario: data.sugestao || "",
+  canal_resposta: "WhatsApp",
+  aceitou_optin: mapas.aceitou_optin?.[data.optin] || data.optin,
+  campanha_id: data.campanha_id || "avaliacao_2025",
+  versao_flow: data.versao_flow || "v1"
+};
 
     console.log("[Flow] ✅ Dados finais mapeados com usuário:");
     console.table(dadosMapeados);
