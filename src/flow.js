@@ -26,7 +26,7 @@ export const getNextScreen = async (decryptedBody) => {
   }
 
   if (action === "data_exchange") {
-    // Mapeamento de valores enviados como ID
+    // Mapeamento dos valores de ID para os títulos legíveis
     const mapas = {
       avaliacao_geral: {
         "0": "Muito bom",
