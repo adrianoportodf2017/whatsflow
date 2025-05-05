@@ -1,11 +1,5 @@
 const SCREEN_RESPONSES = {
-  AVALIACAO_FINALIZADA: (dadosRecebidos) => ({
-    screen: "AVALIACAO_FINALIZADA",
-    data: {
-      mensagem: "✅ Obrigado pela sua avaliação!",
-      dados_recebidos: dadosRecebidos
-    }
-  }),
+  // Mantido apenas para referência futura
 };
 
 export const getNextScreen = async (decryptedBody) => {
@@ -26,7 +20,7 @@ export const getNextScreen = async (decryptedBody) => {
   }
 
   if (action === "data_exchange") {
-    // Mapeamento dos valores de ID para os títulos legíveis
+    // Mapeamento dos valores ID → Título legível
     const mapas = {
       avaliacao_geral: {
         "0": "Muito bom",
@@ -76,11 +70,16 @@ export const getNextScreen = async (decryptedBody) => {
       sugestao: data.sugestao
     };
 
-    console.log("[Flow] ✅ Dados finais mapeados:");
+    console.log("[Flow] ✅ Dados finais mapeados para debug:");
     console.table(dadosMapeados);
-    return { data: { status: "completed" } };
-   }
 
+    // Aqui você pode salvar no banco ou Google Sheets se quiser
+
+    // ✅ Finaliza silenciosamente o Flow
+    return { data: { status: "completed" } };
+  }
+
+  // Fallback
   return {
     screen: "INTRODUCAO",
     data: {}
