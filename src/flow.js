@@ -79,7 +79,13 @@ const profile_name = user?.name || "Usuário Teste";
 
     // Aqui você pode salvar no banco, enviar para planilha etc.
 
-    return { data: { status: "completed" } };
+  return {
+    screen: "AVALIACAO_FINALIZADA",
+    data: {
+      mensagem: "Obrigado pela sua avaliação!"
+    }
+  };
+    
   }
 
   return {
