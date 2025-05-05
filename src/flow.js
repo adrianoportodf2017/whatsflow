@@ -3,13 +3,14 @@ const SCREEN_RESPONSES = {};
 export const getNextScreen = async (decryptedBody) => {
   const { screen, data, action, user } = decryptedBody;
 
-  const wa_id = user?.wa_id || "5561992070366";
+  const wa_id = user?.wa_id || "5561986127334";
   const profile_name = user?.name || "Usuário Teste neide";
 
   console.log("[Flow] Ação recebida:", action);
   console.log("[Flow] Tela atual:", screen);
   console.log("[Flow] Dados recebidos (raw):", data);
   console.log("📲 Usuário:", wa_id, "-", profile_name);
+console.log(decryptedBody);
 
   if (action === "ping") {
     return { data: { status: "active" } };
