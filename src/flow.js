@@ -3,8 +3,8 @@ const SCREEN_RESPONSES = {};
 export const getNextScreen = async (decryptedBody) => {
   const { screen, data, action, user } = decryptedBody;
 
-  const wa_id = user?.wa_id;
-  const profile_name = user?.name;
+const wa_id = user?.wa_id || "simulacao_teste";
+const profile_name = user?.name || "Usuário Teste";
 
   console.log("[Flow] Ação recebida:", action);
   console.log("[Flow] Tela atual:", screen);
