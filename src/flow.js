@@ -1,12 +1,15 @@
-const SCREEN_RESPONSES = {
-  // Mantido apenas para referência futura
-};
+const SCREEN_RESPONSES = {};
 
 export const getNextScreen = async (decryptedBody) => {
-  const { screen, data, action } = decryptedBody;
+  const { screen, data, action, user } = decryptedBody;
+
+  const wa_id = user?.wa_id;
+  const profile_name = user?.name;
+
   console.log("[Flow] Ação recebida:", action);
   console.log("[Flow] Tela atual:", screen);
   console.log("[Flow] Dados recebidos (raw):", data);
+  console.log("📲 Usuário:", wa_id, "-", profile_name);
 
   if (action === "ping") {
     return { data: { status: "active" } };
@@ -20,7 +23,6 @@ export const getNextScreen = async (decryptedBody) => {
   }
 
   if (action === "data_exchange") {
-    // Mapeamento dos valores ID → Título legível
     const mapas = {
       avaliacao_geral: {
         "0": "Muito bom",
@@ -59,6 +61,8 @@ export const getNextScreen = async (decryptedBody) => {
     };
 
     const dadosMapeados = {
+      wa_id: wa_id,
+      nome_usuario: profile_name,
       optin: data.optin,
       avaliacao_geral: mapas.avaliacao_geral?.[data.avaliacao_geral] || data.avaliacao_geral,
       clareza_info: mapas.clareza_info?.[data.clareza_info] || data.clareza_info,
@@ -70,16 +74,14 @@ export const getNextScreen = async (decryptedBody) => {
       sugestao: data.sugestao
     };
 
-    console.log("[Flow] ✅ Dados finais mapeados para debug:");
+    console.log("[Flow] ✅ Dados finais mapeados com usuário:");
     console.table(dadosMapeados);
 
-    // Aqui você pode salvar no banco ou Google Sheets se quiser
+    // Aqui você pode salvar no banco, enviar para planilha etc.
 
-    // ✅ Finaliza silenciosamente o Flow
     return { data: { status: "completed" } };
   }
 
-  // Fallback
   return {
     screen: "INTRODUCAO",
     data: {}
