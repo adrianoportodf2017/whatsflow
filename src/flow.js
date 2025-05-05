@@ -85,7 +85,7 @@ export const getNextScreen = async (decryptedBody) => {
     console.table(dadosMapeados);
 
     try {
-      const response = await fetch("https://script.google.com/macros/s/AKfycbxR41ziChqfZuRnyejqwf6zZKZeRons1dCKslm3Wdp48OxY5-q5NdAhdqthPptMUTOk/exec?tipo=pesquisa", {
+      const response = await fetch("https://script.google.com/macros/s/AKfycbzghAiaunrdhcrTuAvgY8gGkzMETi4vxI8uokpKXHRe6klvO_pb8FCxnQ7Bu5TSn0Ij/exec?tipo=pesquisa", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
