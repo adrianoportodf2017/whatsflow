@@ -1,40 +1,13 @@
-/**
- * flow.js adaptado e corrigido para o processo de votação do Instituto Cooperforte
- */
-
 const SCREEN_RESPONSES = {
-  IDENTIFICACAO_CPF: {
-    screen: "IDENTIFICACAO_CPF",
-    data: {}
-  },
-  SELECIONA_CANDIDATOS: {
-    screen: "SELECIONA_CANDIDATOS",
+  AVALIACAO_FINALIZADA: (dadosRecebidos) => ({
+    screen: "AVALIACAO_FINALIZADA",
     data: {
-      candidatos: [
-        { id: "1", title: "Elvira Cruvinel Ferreira" },
-        { id: "2", title: "Magno Soares dos Santos" },
-        { id: "3", title: "Maria de Jesus Demétrio Gaia" },
-        { id: "4", title: "Maurício Teixeira da Costa" },
-        { id: "5", title: "Sandra Regina de Miranda" }
-      ]
+      mensagem: "✅ Obrigado pela sua avaliação!",
+      dados_recebidos: dadosRecebidos
     }
-  },
-  CONFIRMACAO_VOTO: {
-    screen: "CONFIRMACAO_VOTO",
-    data: {}
-  },
-  VOTO_FINALIZADO: (cpf, candidatos_id, candidatos_nomes, hashGerado) => {
-    const hash = hashGerado || Math.random().toString(36).substring(2, 8).toUpperCase();
-    return {
-      screen: "VOTO_FINALIZADO",
-      data: {
-        cpf,
-        hash,
-        candidatos_id,
-        candidatos_nomes
-      }
-    };
-  }
+  }),
+
+  // ...telas anteriores mantidas aqui
 };
 
 export const getNextScreen = async (decryptedBody) => {
@@ -48,137 +21,30 @@ export const getNextScreen = async (decryptedBody) => {
   }
 
   if (action === "INIT") {
-    return SCREEN_RESPONSES.IDENTIFICACAO_CPF;
+    return {
+      screen: "INTRODUCAO",
+      data: {}
+    };
   }
 
   if (action === "data_exchange") {
-    switch (screen) {
-      case "IDENTIFICACAO_CPF": {
-        const cpf = data?.cpf;
-
-        try {
-          const response = await fetch(
-            `https://script.google.com/macros/s/AKfycbzb7_mbiFNqQd47FG01bbOH3eDpgD0eNBjopjCgQ6K5b9QDtEhgJRY9YxWiK2EIosd0/exec?cpf=${cpf}`,
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-              }
-            }
-          );
-
-          const result = await response.json();
-          console.log("debug - resposta da API:", result);
-
-          if (result.encontrado == false) {
-            return {
-              screen: "IDENTIFICACAO_CPF",
-              data: {
-                error: true,
-                error_message: result.mensagem
-              }
-            };
-          }
-
-          if (result.encontrado == true && result.votou == "sim") {
-            return {
-              screen: "USUARIO_JA_VOTOU",
-              data: {
-                cpf,
-                hash: result.hash,
-                candidatos: []
-              }
-            };
-          }
-
-          if (result.encontrado == true && result.votou == "Não") {
-            return {
-              screen: "SELECIONA_CANDIDATOS",
-              data: {
-                cpf,
-                nome: result.nome,
-                texto_nome: "👋 Olá, "+result.nome +"!",
-                candidatos: SCREEN_RESPONSES.SELECIONA_CANDIDATOS.data.candidatos
-              }
-            };
-          }
-
-          return SCREEN_RESPONSES.SELECIONA_CANDIDATOS;
-
-        } catch (error) {
-          console.error("Erro na requisição de verificação de CPF:", error);
-          return {
-            screen: "IDENTIFICACAO_CPF",
-            data: {
-              error: true,
-              error_message: "Erro ao verificar o CPF. Tente novamente."
-            }
-          };
-        }
-      }
-
-      case "SELECIONA_CANDIDATOS": {
-        const { cpf, candidatos } = data;
-        const mapaCandidatos = SCREEN_RESPONSES.SELECIONA_CANDIDATOS.data.candidatos.reduce((acc, curr) => {
-          acc[curr.id] = curr.title;
-          return acc;
-        }, {});
-
-        const nomesSelecionados = (candidatos || [])
-          .map(id => `${id} - ${mapaCandidatos[id]}`)
-          .filter(Boolean);
-
-        return {
-          screen: "CONFIRMACAO_VOTO",
-          data: {
-            cpf,
-            texto_confirmacao: "Você selecionou:",
-            candidatos_lista: nomesSelecionados.join(",\n"),
-            candidatos_id: candidatos.map(id => ({ id }))
-          }
-        };
-      }
-
-      case "CONFIRMACAO_VOTO": {
-        const { cpf, candidatos_id } = data;
-
-        const mapaCandidatos = SCREEN_RESPONSES.SELECIONA_CANDIDATOS.data.candidatos.reduce((acc, curr) => {
-          acc[curr.id] = curr.title;
-          return acc;
-        }, {});
-
-        const nomesSelecionados = (candidatos_id || []).map(({ id }) => mapaCandidatos[id]).filter(Boolean);
-        let hashGerado = null;
-
-        try {
-          const response = await fetch(
-            "https://script.google.com/macros/s/AKfycbznKlAy5Goy6a7XW_l7OzC1OinDuMx12CyD5QjaetruTFd1soEQ4TikV54jpKfW39M3/exec",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                cpf,
-                candidatos: nomesSelecionados
-              })
-            }
-          );
-
-          const result = await response.json();
-          console.log("debug - resposta POST finalização:", result);
-          hashGerado = result?.hash;
-        } catch (error) {
-          console.error("Erro ao enviar voto:", error);
-        }
-
-        return SCREEN_RESPONSES.VOTO_FINALIZADO(cpf, candidatos_id, nomesSelecionados, hashGerado);
-      }
-
-      default:
-        return SCREEN_RESPONSES.IDENTIFICACAO_CPF;
-    }
+    // Aqui você pode incluir telas se quiser dividir lógica
+    return {
+      screen: "INTRODUCAO",
+      data: {}
+    };
   }
 
-  return SCREEN_RESPONSES.IDENTIFICACAO_CPF;
+  if (action === "complete") {
+    // Captura final dos dados enviados pelo Flow
+    console.log("[Flow] 📦 Dados finais recebidos do Flow de avaliação:");
+    console.table(data);
+
+    return SCREEN_RESPONSES.AVALIACAO_FINALIZADA(data);
+  }
+
+  return {
+    screen: "INTRODUCAO",
+    data: {}
+  };
 };
