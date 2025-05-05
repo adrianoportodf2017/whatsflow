@@ -24,7 +24,7 @@ export const getNextScreen = async (decryptedBody) => {
 
   if (action === "data_exchange") {
     const mapas = {
-      avaliacao_geral: {
+      nota_processo: {
         "0": "Muito bom",
         "1": "Bom",
         "2": "Regular",
@@ -45,7 +45,7 @@ export const getNextScreen = async (decryptedBody) => {
         "3": "Difícil",
         "4": "Muito difícil"
       },
-      problema_tecnico: {
+      teve_problema: {
         "0": "Não",
         "1": "Sim"
       },
@@ -54,32 +54,39 @@ export const getNextScreen = async (decryptedBody) => {
         "1": "Entre 5 e 10 minutos",
         "2": "Mais de 10 minutos"
       },
-      receber_info: {
+      receber_infos: {
         "0": "Sim, com certeza",
+        "1": "Não"
+      },
+      aceitou_optin: {
+        "0": "Sim",
         "1": "Não"
       }
     };
 
     const dadosMapeados = {
+      cpf: data.cpf,
+      profile_name: profile_name,
       wa_id: wa_id,
-      nome_usuario: profile_name,
-      optin: data.optin,
-      avaliacao_geral: mapas.avaliacao_geral?.[data.avaliacao_geral] || data.avaliacao_geral,
+      nota_processo: mapas.nota_processo?.[data.avaliacao_geral] || data.avaliacao_geral,
       clareza_info: mapas.clareza_info?.[data.clareza_info] || data.clareza_info,
       facilidade_uso: mapas.facilidade_uso?.[data.facilidade_uso] || data.facilidade_uso,
-      problema_tecnico: mapas.problema_tecnico?.[data.problema_tecnico] || data.problema_tecnico,
-      descricao_problema: data.descricao_problema,
+      teve_problema: mapas.teve_problema?.[data.problema_tecnico] || data.problema_tecnico,
+      qual_problema: data.descricao_problema || "",
       tempo_votacao: mapas.tempo_votacao?.[data.tempo_votacao] || data.tempo_votacao,
-      receber_info: mapas.receber_info?.[data.receber_info] || data.receber_info,
-      sugestao: data.sugestao
+      receber_infos: mapas.receber_infos?.[data.receber_info] || data.receber_info,
+      comentario: data.sugestao || "",
+      canal_resposta: "WhatsApp",
+      aceitou_optin: mapas.aceitou_optin?.[data.optin] || data.optin,
+      campanha_id: data.campanha_id || "avaliacao_2025",
+      versao_flow: data.versao_flow || "v1"
     };
 
     console.log("[Flow] ✅ Dados finais mapeados com usuário:");
     console.table(dadosMapeados);
 
-    // Enviar os dados para o endpoint externo via fetch nativo
     try {
-      const response = await fetch("https://api-cadastro-flow.agenciatecnet.com.br/index.php", {
+      const response = await fetch("https://script.google.com/macros/s/AKfycbxR41ziChqfZuRnyejqwf6zZKZeRons1dCKslm3Wdp48OxY5-q5NdAhdqthPptMUTOk/exec?tipo=pesquisa", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
