@@ -1,5 +1,3 @@
-import fetch from "node-fetch"; // ou axios se preferir
-
 const SCREEN_RESPONSES = {};
 
 export const getNextScreen = async (decryptedBody) => {
@@ -79,7 +77,7 @@ export const getNextScreen = async (decryptedBody) => {
     console.log("[Flow] ✅ Dados finais mapeados com usuário:");
     console.table(dadosMapeados);
 
-    // Enviar os dados para o endpoint PHP externo
+    // Enviar os dados para o endpoint externo via fetch nativo
     try {
       const response = await fetch("https://api-cadastro-flow.agenciatecnet.com.br/index.php", {
         method: "POST",
@@ -90,9 +88,9 @@ export const getNextScreen = async (decryptedBody) => {
       });
 
       const resultado = await response.json();
-      console.log("[Flow] 📤 Resultado do envio para endpoint externo:", resultado);
+      console.log("[Flow] 📤 Resultado do envio:", resultado);
     } catch (error) {
-      console.error("[Flow] ❌ Erro ao enviar para endpoint PHP:", error);
+      console.error("[Flow] ❌ Erro ao enviar dados:", error);
     }
 
     return {
