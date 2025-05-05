@@ -78,9 +78,8 @@ export const getNextScreen = async (decryptedBody) => {
 
     console.log("[Flow] ✅ Dados finais mapeados:");
     console.table(dadosMapeados);
-
-    return SCREEN_RESPONSES.AVALIACAO_FINALIZADA(dadosMapeados);
-  }
+    return { data: { status: "completed" } };
+   }
 
   return {
     screen: "INTRODUCAO",
