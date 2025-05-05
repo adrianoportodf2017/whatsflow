@@ -1,10 +1,12 @@
+import fetch from "node-fetch"; // ou axios se preferir
+
 const SCREEN_RESPONSES = {};
 
 export const getNextScreen = async (decryptedBody) => {
   const { screen, data, action, user } = decryptedBody;
 
-const wa_id = user?.wa_id || "simulacao_teste";
-const profile_name = user?.name || "Usuário Teste";
+  const wa_id = user?.wa_id || "simulacao_teste";
+  const profile_name = user?.name || "Usuário Teste";
 
   console.log("[Flow] Ação recebida:", action);
   console.log("[Flow] Tela atual:", screen);
@@ -77,15 +79,28 @@ const profile_name = user?.name || "Usuário Teste";
     console.log("[Flow] ✅ Dados finais mapeados com usuário:");
     console.table(dadosMapeados);
 
-    // Aqui você pode salvar no banco, enviar para planilha etc.
+    // Enviar os dados para o endpoint PHP externo
+    try {
+      const response = await fetch("https://api-cadastro-flow.agenciatecnet.com.br/index.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(dadosMapeados)
+      });
 
-  return {
-    screen: "AVALIACAO_FINALIZADA",
-    data: {
-      mensagem: "Obrigado pela sua avaliação!"
+      const resultado = await response.json();
+      console.log("[Flow] 📤 Resultado do envio para endpoint externo:", resultado);
+    } catch (error) {
+      console.error("[Flow] ❌ Erro ao enviar para endpoint PHP:", error);
     }
-  };
-    
+
+    return {
+      screen: "AVALIACAO_FINALIZADA",
+      data: {
+        mensagem: "Obrigado pela sua avaliação!"
+      }
+    };
   }
 
   return {
