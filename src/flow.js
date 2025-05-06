@@ -3,8 +3,8 @@ const SCREEN_RESPONSES = {};
 export const getNextScreen = async (decryptedBody) => {
   const { screen, data, action, user } = decryptedBody;
 
-  const wa_id = user?.wa_id || "5561986127334";
-  const profile_name = user?.name || "Usuário Teste neide";
+  const wa_id = user?.wa_id ||  "";
+  const profile_name = user?.name || " ";
 
   console.log("[Flow] Ação recebida:", action);
   console.log("[Flow] Tela atual:", screen);
@@ -19,13 +19,9 @@ console.log(decryptedBody);
   if (action === "INIT") {
     return {
       screen: "INTRODUCAO",
-      data: {
-        nome: "Robson Cardoso da Silva",
-        telefone: "5561981033120"
-      }
+      data: {}
     };
   }
-  
 
   if (action === "data_exchange") {
     const mapas = {
@@ -70,8 +66,9 @@ console.log(decryptedBody);
     };
 
     const dadosMapeados = {
-  wa_id: wa_id,
-  profile_name: profile_name,
+  wa_id: data.wa_id,
+  cpf: data.cpf,  
+  profile_name: data.nome,
   nota_processo: mapas.nota_processo?.[data.avaliacao_geral] || data.avaliacao_geral,
   clareza_info: mapas.clareza_info?.[data.clareza_info] || data.clareza_info,
   facilidade_uso: mapas.facilidade_uso?.[data.facilidade_uso] || data.facilidade_uso,
