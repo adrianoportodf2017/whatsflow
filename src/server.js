@@ -22,6 +22,9 @@ app.use(
 );
 
 const { APP_SECRET, PRIVATE_KEY, PASSPHRASE = "", PORT = "3000" } = process.env;
+  console.log("[    ] ", PASSPHRASE);
+  console.log("[    ] ", PRIVATE_KEY);
+   console.log("[    ] ", APP_SECRET);
 
 /*
 Example:
@@ -39,6 +42,7 @@ app.post("/", async (req, res) => {
     );
   }
 
+
   if(!isRequestSignatureValid(req)) {
     // Return status code 432 if request signature does not match.
     // To learn more about return error codes visit: https://developers.facebook.com/docs/whatsapp/flows/reference/error-codes#endpoint_error_codes
@@ -47,6 +51,7 @@ app.post("/", async (req, res) => {
 
   let decryptedRequest = null;
   try {
+
     decryptedRequest = decryptRequest(req.body, PRIVATE_KEY, PASSPHRASE);
   } catch (err) {
     console.error(err);
