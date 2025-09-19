@@ -1,116 +1,166 @@
+// Flow WhatsApp - Máfia Beer
+// Parte 1: Tela Welcome com integração de API
+
 const SCREEN_RESPONSES = {};
 
 export const getNextScreen = async (decryptedBody) => {
   const { screen, data, action, user } = decryptedBody;
 
-  const wa_id = user?.wa_id ||  "";
-  const profile_name = user?.name || " ";
+  const wa_id = user?.wa_id || "";
+  const profile_name = user?.name || "";
 
-  console.log("[Flow] Ação recebida:", action);
-  console.log("[Flow] Tela atual:", screen);
-  console.log("[Flow] Dados recebidos (raw):", data);
-  console.log("📲 Usuário:", wa_id, "-", profile_name);
-console.log(decryptedBody);
+  console.log("[Máfia Beer Flow] Ação recebida:", action);
+  console.log("[Máfia Beer Flow] Tela atual:", screen);
+  console.log("[Máfia Beer Flow] Dados recebidos:", data);
+  console.log("🍺 Cliente:", wa_id, "-", profile_name);
 
+  // Verificação de status
   if (action === "ping") {
     return { data: { status: "active" } };
   }
 
+  // Inicialização do flow
   if (action === "INIT") {
-    return {
-      screen: "INTRODUCAO",
-      data: {}
-    };
+    return await getWelcomeScreen();
   }
 
-  if (action === "data_exchange") {
-    const mapas = {
-      nota_processo: {
-        "0": "Muito bom",
-        "1": "Bom",
-        "2": "Regular",
-        "3": "Ruim",
-        "4": "Muito ruim"
-      },
-      clareza_info: {
-        "0": "Muito claro",
-        "1": "Claro",
-        "2": "Regular",
-        "3": "Pouco claro",
-        "4": "Nada claro"
-      },
-      facilidade_uso: {
-        "0": "Muito fácil",
-        "1": "Fácil",
-        "2": "Regular",
-        "3": "Difícil",
-        "4": "Muito difícil"
-      },
-      teve_problema: {
-        "0": "Não",
-        "1": "Sim"
-      },
-      tempo_votacao: {
-        "0": "Menos de 5 minutos",
-        "1": "Entre 5 e 10 minutos",
-        "2": "Mais de 10 minutos"
-      },
-      receber_infos: {
-        "0": "Sim, com certeza",
-        "1": "Não"
-      },
-      aceitou_optin: {
-        "0": "Sim",
-        "1": "Não"
+  // Processamento da tela Welcome
+  if (action === "data_exchange" && screen === "WELCOME") {
+    return await processWelcomeSelection(data);
+  }
+
+  // Fallback para tela inicial
+  return await getWelcomeScreen();
+};
+
+// Função para buscar e montar a tela WELCOME
+async function getWelcomeScreen() {
+  try {
+    console.log("[Máfia Beer] Carregando tela de boas-vindas...");
+
+    // Aqui você pode buscar dados dinâmicos de uma API
+    // Por enquanto, vou usar dados estáticos baseados no seu JSON
+    const menuOptions = await getMenuOptions();
+
+    return {
+      screen: "WELCOME",
+      data: {
+        // Dados dinâmicos que serão injetados no flow
+        menu_options: menuOptions,
+        version: "7.0",
+        store_name: "Máfia Beer",
+        welcome_message: "🍺 Bem-vindo à Máfia Beer! O que você deseja hoje?"
       }
     };
 
-    const dadosMapeados = {
-  wa_id: data.wa_id,
-  cpf: data.cpf,  
-  profile_name: data.nome,
-  nota_processo: mapas.nota_processo?.[data.avaliacao_geral] || data.avaliacao_geral,
-  clareza_info: mapas.clareza_info?.[data.clareza_info] || data.clareza_info,
-  facilidade_uso: mapas.facilidade_uso?.[data.facilidade_uso] || data.facilidade_uso,
-  teve_problema: mapas.teve_problema?.[data.problema_tecnico] || data.problema_tecnico,
-  qual_problema: data.descricao_problema || "",
-  tempo_votacao: mapas.tempo_votacao?.[data.tempo_votacao] || data.tempo_votacao,
-  receber_infos: mapas.receber_infos?.[data.receber_info] || data.receber_info,
-  comentario: data.sugestao || "",
-  canal_resposta: "WhatsApp",
-  aceitou_optin: mapas.aceitou_optin?.[data.optin] || data.optin,
-  campanha_id: data.campanha_id || "avaliacao_2025",
-  versao_flow: data.versao_flow || "v1"
-};
+  } catch (error) {
+    console.error("[Máfia Beer] Erro ao carregar tela Welcome:", error);
+    
+    // Fallback com opções estáticas
+    return {
+      screen: "WELCOME",
+      data: {
+        menu_options: [
+          { "id": "growler", "title": "Pedir Growler (entrega rápida)" },
+          { "id": "barrel", "title": "Pedir Barril (eventos)" },
+          { "id": "pickup", "title": "Retirar em Ponto Parceiro" }
+        ],
+        welcome_message: "🍺 Bem-vindo à Máfia Beer! O que você deseja hoje?"
+      }
+    };
+  }
+}
 
-    console.log("[Flow] ✅ Dados finais mapeados com usuário:");
-    console.table(dadosMapeados);
+// Função para buscar opções do menu via API
+async function getMenuOptions() {
+  try {
+    // Substitua pela URL da sua API
+    const apiUrl = "https://sua-api-cervejaria.com/menu-options";
+    
+    const response = await fetch(apiUrl, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        // Adicione headers de autenticação se necessário
+        // "Authorization": "Bearer seu-token"
+      }
+    });
 
-    try {
-      const response = await fetch("https://script.google.com/macros/s/AKfycbzghAiaunrdhcrTuAvgY8gGkzMETi4vxI8uokpKXHRe6klvO_pb8FCxnQ7Bu5TSn0Ij/exec?tipo=pesquisa", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(dadosMapeados)
-      });
-
-      const resultado = await response.json();
-      console.log("[Flow] 📤 Resultado do envio:", resultado);
-    } catch (error) {
-      console.error("[Flow] ❌ Erro ao enviar dados:", error);
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`);
     }
 
-    return {
-      screen: "AVALIACAO_FINALIZADA",
-      data: {
-        mensagem: "Obrigado pela sua avaliação!"
-      }
-    };
-  }
+    const menuData = await response.json();
+    
+    console.log("[Máfia Beer] Opções do menu carregadas da API:", menuData);
+    
+    // Mapear resposta da API para o formato esperado pelo flow
+    return menuData.options || [
+      { "id": "growler", "title": "Pedir Growler (entrega rápida)" },
+      { "id": "barrel", "title": "Pedir Barril (eventos)" },
+      { "id": "pickup", "title": "Retirar em Ponto Parceiro" }
+    ];
 
-  return {
-    screen: "INTRODUCAO",
-    data: {}
+  } catch (error) {
+    console.error("[Máfia Beer] Erro ao buscar opções da API:", error);
+    
+    // Retorna opções padrão em caso de erro
+    return [
+      { "id": "growler", "title": "Pedir Growler (entrega rápida)" },
+      { "id": "barrel", "title": "Pedir Barril (eventos)" },
+      { "id": "pickup", "title": "Retirar em Ponto Parceiro" }
+    ];
+  }
+}
+
+// Função para processar a seleção feita na tela Welcome
+async function processWelcomeSelection(data) {
+  const selectedOption = data.main_menu;
+  
+  console.log("[Máfia Beer] Opção selecionada:", selectedOption);
+
+  // Log dos dados do usuário
+  const userData = {
+    wa_id: data.wa_id,
+    profile_name: data.nome || data.profile_name,
+    selected_service: selectedOption,
+    timestamp: new Date().toISOString(),
+    flow_version: "v1.0"
   };
-};
+
+  console.log("[Máfia Beer] Dados do usuário:", userData);
+
+  // Determinar próxima tela baseado na seleção
+  switch (selectedOption) {
+    case "growler":
+      return {
+        screen: "GROWLER_SELECTOR",
+        data: {
+          user_data: userData,
+          service_type: "growler"
+        }
+      };
+
+    case "barrel":
+      return {
+        screen: "BARREL_FORM", 
+        data: {
+          user_data: userData,
+          service_type: "barrel"
+        }
+      };
+
+    case "pickup":
+      return {
+        screen: "PICKUP_SELECTOR",
+        data: {
+          user_data: userData,
+          service_type: "pickup"  
+        }
+      };
+
+    default:
+      console.log("[Máfia Beer] Opção inválida, retornando para Welcome");
+      return await getWelcomeScreen();
+  }
+}
