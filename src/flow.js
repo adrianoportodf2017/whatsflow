@@ -13,15 +13,15 @@ const SCREEN_RESPONSES = {
       main_menu: [
         {
           id: "growler",
-          title: "Pedir Growler (entrega rápida) teste 1"
+          title: "Pedir Growler (entrega rápida)"
         },
         {
           id: "barrel",
-          title: "Pedir Barril (eventos) teste 2"
+          title: "Pedir Barril (eventos)"
         },
         {
           id: "pickup",
-          title: "Retirar em Ponto Parceiro teste 3"
+          title: "Retirar em Ponto Parceiro"
         }
       ]
     }
