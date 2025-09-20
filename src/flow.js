@@ -8,8 +8,23 @@
 // Definição das telas e seus dados conforme o JSON do Flow
 const SCREEN_RESPONSES = {
   WELCOME: {
-      "screen": "WELCOME",
-      "data": {}
+    screen: "WELCOME",
+    data: {
+      main_menu: [
+        {
+          id: "growler",
+          title: "Pedir Growler (entrega rápida)"
+        },
+        {
+          id: "barrel",
+          title: "Pedir Barril (eventos)"
+        },
+        {
+          id: "pickup",
+          title: "Retirar em Ponto Parceiro"
+        }
+      ]
+    }
   },
   GROWLER_SELECTOR: {
       "screen": "GROWLER_SELECTOR",
