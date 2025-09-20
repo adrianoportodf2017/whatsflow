@@ -1,67 +1,184 @@
 /**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
+ * flow.js adaptado e corrigido para o processo de votação do Instituto Cooperforte
  */
 
+const SCREEN_RESPONSES = {
+  IDENTIFICACAO_CPF: {
+    screen: "IDENTIFICACAO_CPF",
+    data: {}
+  },
+  SELECIONA_CANDIDATOS: {
+    screen: "SELECIONA_CANDIDATOS",
+    data: {
+      candidatos: [
+        { id: "1", title: "Elvira Cruvinel Ferreira" },
+        { id: "2", title: "Magno Soares dos Santos" },
+        { id: "3", title: "Maria de Jesus Demétrio Gaia" },
+        { id: "4", title: "Maurício Teixeira da Costa" },
+        { id: "5", title: "Sandra Regina de Miranda" }
+      ]
+    }
+  },
+  CONFIRMACAO_VOTO: {
+    screen: "CONFIRMACAO_VOTO",
+    data: {}
+  },
+  VOTO_FINALIZADO: (cpf, candidatos_id, candidatos_nomes, hashGerado) => {
+    const hash = hashGerado || Math.random().toString(36).substring(2, 8).toUpperCase();
+    return {
+      screen: "VOTO_FINALIZADO",
+      data: {
+        cpf,
+        hash,
+        candidatos_id,
+        candidatos_nomes
+      }
+    };
+  }
+};
+
 export const getNextScreen = async (decryptedBody) => {
-  const { screen, data, version, action, flow_token } = decryptedBody;
-  // handle health check request
+  const { screen, data, action } = decryptedBody;
+  console.log("[Flow] Ação recebida:", action);
+  console.log("[Flow] Tela atual:", screen);
+  console.log("[Flow] Dados recebidos:", data);
+
   if (action === "ping") {
-    return {
-      data: {
-        status: "active",
-      },
-    };
+    return { data: { status: "active" } };
   }
 
-  // handle error notification
-  if (data?.error) {
-    console.warn("Received client error:", data);
-    return {
-      data: {
-        acknowledged: true,
-      },
-    };
-  }
-
-  // handle initial request when opening the flow
   if (action === "INIT") {
-    return {
-      screen: "MY_SCREEN",
-      data: {
-        // custom data for the screen
-        greeting: "Hey there! 👋",
-      },
-    };
+    return SCREEN_RESPONSES.IDENTIFICACAO_CPF;
   }
 
   if (action === "data_exchange") {
-    // handle the request based on the current screen
     switch (screen) {
-      case "MY_SCREEN":
-        // TODO: process flow input data
-        console.info("Input name:", data?.name);
+      case "IDENTIFICACAO_CPF": {
+        const cpf = data?.cpf;
 
-        // send success response to complete and close the flow
+        try {
+          const response = await fetch(
+            `https://script.google.com/macros/s/AKfycbzb7_mbiFNqQd47FG01bbOH3eDpgD0eNBjopjCgQ6K5b9QDtEhgJRY9YxWiK2EIosd0/exec?cpf=${cpf}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              }
+            }
+          );
+
+          const result = await response.json();
+          console.log("debug - resposta da API:", result);
+
+          if (result.encontrado == false) {
+            return {
+              screen: "IDENTIFICACAO_CPF",
+              data: {
+                error: true,
+                error_message: result.mensagem
+              }
+            };
+          }
+
+          if (result.encontrado == true && result.votou == "sim") {
+            return {
+              screen: "USUARIO_JA_VOTOU",
+              data: {
+                cpf,
+                hash: result.hash,
+                candidatos: []
+              }
+            };
+          }
+
+          if (result.encontrado == true && result.votou == "Não") {
+            return {
+              screen: "SELECIONA_CANDIDATOS",
+              data: {
+                cpf,
+                nome: result.nome,
+                texto_nome: "👋 Olá, "+result.nome +"!",
+                candidatos: SCREEN_RESPONSES.SELECIONA_CANDIDATOS.data.candidatos
+              }
+            };
+          }
+
+          return SCREEN_RESPONSES.SELECIONA_CANDIDATOS;
+
+        } catch (error) {
+          console.error("Erro na requisição de verificação de CPF:", error);
+          return {
+            screen: "IDENTIFICACAO_CPF",
+            data: {
+              error: true,
+              error_message: "Erro ao verificar o CPF. Tente novamente."
+            }
+          };
+        }
+      }
+
+      case "SELECIONA_CANDIDATOS": {
+        const { cpf, candidatos } = data;
+        const mapaCandidatos = SCREEN_RESPONSES.SELECIONA_CANDIDATOS.data.candidatos.reduce((acc, curr) => {
+          acc[curr.id] = curr.title;
+          return acc;
+        }, {});
+
+        const nomesSelecionados = (candidatos || [])
+          .map(id => `${id} - ${mapaCandidatos[id]}`)
+          .filter(Boolean);
+
         return {
-          screen: "SUCCESS",
+          screen: "CONFIRMACAO_VOTO",
           data: {
-            extension_message_response: {
-              params: {
-                flow_token,
-              },
-            },
-          },
+            cpf,
+            texto_confirmacao: "Você selecionou:",
+            candidatos_lista: nomesSelecionados.join(",\n"),
+            candidatos_id: candidatos.map(id => ({ id }))
+          }
         };
+      }
+
+      case "CONFIRMACAO_VOTO": {
+        const { cpf, candidatos_id } = data;
+
+        const mapaCandidatos = SCREEN_RESPONSES.SELECIONA_CANDIDATOS.data.candidatos.reduce((acc, curr) => {
+          acc[curr.id] = curr.title;
+          return acc;
+        }, {});
+
+        const nomesSelecionados = (candidatos_id || []).map(({ id }) => mapaCandidatos[id]).filter(Boolean);
+        let hashGerado = null;
+
+        try {
+          const response = await fetch(
+            "https://script.google.com/macros/s/AKfycbznKlAy5Goy6a7XW_l7OzC1OinDuMx12CyD5QjaetruTFd1soEQ4TikV54jpKfW39M3/exec",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                cpf,
+                candidatos: nomesSelecionados
+              })
+            }
+          );
+
+          const result = await response.json();
+          console.log("debug - resposta POST finalização:", result);
+          hashGerado = result?.hash;
+        } catch (error) {
+          console.error("Erro ao enviar voto:", error);
+        }
+
+        return SCREEN_RESPONSES.VOTO_FINALIZADO(cpf, candidatos_id, nomesSelecionados, hashGerado);
+      }
+
       default:
-        break;
+        return SCREEN_RESPONSES.IDENTIFICACAO_CPF;
     }
   }
 
-  console.error("Unhandled request body:", decryptedBody);
-  throw new Error(
-    "Unhandled endpoint request. Make sure you handle the request action & screen logged above."
-  );
+  return SCREEN_RESPONSES.IDENTIFICACAO_CPF;
 };
