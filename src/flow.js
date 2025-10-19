@@ -386,6 +386,7 @@ const SCREEN_RESPONSES = {
           formatted_price: `R$ ${product.price.toFixed(2).replace('.', ',')}`,
           description: product.description,
           sku: product.sku,
+          formatted_stock: product.stock > 0 ? product.stock + " unidades disponíveis" : "Indisponível",
           stock: product.stock
         },
         quantity_options: [
