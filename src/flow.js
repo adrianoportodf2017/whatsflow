@@ -530,7 +530,7 @@ export const getNextScreen = async (decryptedBody) => {
           return SCREEN_RESPONSES.CATALOG_PRODUCTS(data);
 
         case "PRODUCT_DETAIL":
-          if (data?.action === "add_to_cart") {
+          if (data?.add_card === "add_to_cart") {
             const productId = parseInt(data.product_id, 10);
             const qty = parsePositiveInt(data.quantity);
             const cartItems = data?.cart_items || [];
@@ -564,6 +564,7 @@ export const getNextScreen = async (decryptedBody) => {
               quantity: String(qty)
             });
           }
+
           return SCREEN_RESPONSES.PRODUCT_DETAIL(data);
 
         case "CART":
