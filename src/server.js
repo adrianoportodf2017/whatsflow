@@ -83,8 +83,7 @@ app.post("/", async (req, res) => {
 });
 
 app.get("/", (req, res) => {
-  res.send(`<pre>Nothing to see here.
-Checkout README.md to start.</pre>`);
+  res.send(`<pre>Ambiente mafia Beer</pre>`);
 });
 
 app.listen(PORT, () => {

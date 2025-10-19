@@ -1,0 +1,570 @@
+{
+  "data_api_version": "3.0",
+  "routing_model": {
+    "WELCOME": [
+      "GROWLER_SELECTOR",
+      "BARREL_FORM",
+      "PICKUP_SELECTOR"
+    ],
+    "GROWLER_SELECTOR": [
+      "PAYMENT"
+    ],
+    "PAYMENT": [
+      "SUMMARY"
+    ],
+    "BARREL_FORM": [
+      "BARREL_OPTIONS"
+    ],
+    "BARREL_OPTIONS": [
+      "SUMMARY"
+    ],
+    "PICKUP_SELECTOR": [
+      "PICKUP_CONFIRM"
+    ],
+    "PICKUP_CONFIRM": [
+      "SUMMARY"
+    ]
+  },
+  "version": "7.0",
+  "screens": [
+    {
+      "id": "WELCOME",
+      "title": "🍺 Máfia Beer",
+      "data": {},
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "welcome_form",
+            "children": [
+              {
+                "type": "TextSubheading",
+                "text": "O que você deseja hoje?"
+              },
+              {
+                "type": "RadioButtonsGroup",
+                "label": "Selecione uma opção",
+                "name": "main_menu",
+                "required": true,
+                "data-source": [
+                  {
+                    "id": "growler",
+                    "title": "Pedir Growler (entrega rápida)"
+                  },
+                  {
+                    "id": "barrel",
+                    "title": "Pedir Barril (eventos)"
+                  },
+                  {
+                    "id": "pickup",
+                    "title": "Retirar em Ponto Parceiro"
+                  }
+                ]
+              },
+              {
+                "type": "Footer",
+                "label": "Continuar",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": {
+                    "type": "screen",
+                    "name": "${form.main_menu == 'growler' ? 'GROWLER_SELECTOR' : (form.main_menu == 'barrel' ? 'BARREL_FORM' : 'PICKUP_SELECTOR')}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "GROWLER_SELECTOR",
+      "title": "Growler • Entrega Rápida",
+      "data": {
+        "hubs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              }
+            }
+          },
+          "__example__": [
+            {
+              "id": "bar_do_zeca",
+              "title": "Bar do Zeca — 1,2 km"
+            },
+            {
+              "id": "emporio_da_cerva",
+              "title": "Empório da Cerva — 2,1 km"
+            }
+          ]
+        },
+        "growlers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              }
+            }
+          },
+          "__example__": [
+            {
+              "id": "pilsen_1l",
+              "title": "Pilsen 1L — R$ 15"
+            },
+            {
+              "id": "ipa_1l",
+              "title": "IPA 1L — R$ 18"
+            },
+            {
+              "id": "weiss_1l",
+              "title": "Weiss 1L — R$ 17"
+            }
+          ]
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "growler_form",
+            "children": [
+              {
+                "type": "TextSubheading",
+                "text": "Informe seu CEP e escolha o ponto parceiro"
+              },
+              {
+                "type": "TextInput",
+                "name": "cep",
+                "label": "CEP",
+                "input-type": "text",
+                "required": true
+              },
+              {
+                "type": "RadioButtonsGroup",
+                "name": "hub",
+                "label": "Ponto Parceiro",
+                "required": true,
+                "data-source": "${data.hubs}"
+              },
+              {
+                "type": "RadioButtonsGroup",
+                "name": "item",
+                "label": "Qual growler?",
+                "required": true,
+                "data-source": "${data.growlers}"
+              },
+              {
+                "type": "TextInput",
+                "name": "qtde",
+                "label": "Quantidade",
+                "input-type": "number",
+                "required": true
+              },
+              {
+                "type": "Footer",
+                "label": "Ir para pagamento",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": {
+                    "type": "screen",
+                    "name": "PAYMENT"
+                  },
+                  "payload": {
+                    "cep": "${form.cep}",
+                    "hub": "${form.hub}",
+                    "item": "${form.item}",
+                    "qtde": "${form.qtde}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "PAYMENT",
+      "title": "Pagamento",
+      "data": {
+        "pay_methods": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              }
+            }
+          },
+          "__example__": [
+            {
+              "id": "pix",
+              "title": "Pix (5% off)"
+            },
+            {
+              "id": "dinheiro",
+              "title": "Dinheiro"
+            },
+            {
+              "id": "cartao",
+              "title": "Cartão na entrega"
+            }
+          ]
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "payment_form",
+            "children": [
+              {
+                "type": "TextSubheading",
+                "text": "Escolha a forma de pagamento"
+              },
+              {
+                "type": "RadioButtonsGroup",
+                "name": "payment",
+                "label": "Pagamento",
+                "required": true,
+                "data-source": "${data.pay_methods}"
+              },
+              {
+                "type": "Footer",
+                "label": "Revisar pedido",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": {
+                    "type": "screen",
+                    "name": "SUMMARY"
+                  },
+                  "payload": {
+                    "payment": "${form.payment}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "BARREL_FORM",
+      "title": "Barril • Solicitar Orçamento",
+      "data": {},
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "barrel_form",
+            "children": [
+              {
+                "type": "TextSubheading",
+                "text": "Dados do evento"
+              },
+              {
+                "type": "TextInput",
+                "name": "date",
+                "label": "Data do evento",
+                "input-type": "text",
+                "required": true
+              },
+              {
+                "type": "TextInput",
+                "name": "people",
+                "label": "Número de pessoas",
+                "input-type": "number",
+                "required": true
+              },
+              {
+                "type": "TextInput",
+                "name": "address",
+                "label": "Endereço",
+                "input-type": "text",
+                "required": true
+              },
+              {
+                "type": "Footer",
+                "label": "Ver sugestões",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": {
+                    "type": "screen",
+                    "name": "BARREL_OPTIONS"
+                  },
+                  "payload": {
+                    "date": "${form.date}",
+                    "people": "${form.people}",
+                    "address": "${form.address}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "BARREL_OPTIONS",
+      "title": "Sugestões de Barril",
+      "data": {
+        "barrel_offers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              }
+            }
+          },
+          "__example__": [
+            {
+              "id": "combo_30l_ipa",
+              "title": "Barril 30L IPA + Chopeira — R$ 350 + frete"
+            },
+            {
+              "id": "combo_50l_pilsen",
+              "title": "Barril 50L Pilsen + Chopeira — R$ 520 + frete"
+            }
+          ]
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "barrel_options_form",
+            "children": [
+              {
+                "type": "TextSubheading",
+                "text": "Escolha uma opção para reservar"
+              },
+              {
+                "type": "RadioButtonsGroup",
+                "name": "barrel_choice",
+                "label": "Opções",
+                "required": true,
+                "data-source": "${data.barrel_offers}"
+              },
+              {
+                "type": "Footer",
+                "label": "Reservar",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": {
+                    "type": "screen",
+                    "name": "SUMMARY"
+                  },
+                  "payload": {
+                    "barrel_choice": "${form.barrel_choice}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "PICKUP_SELECTOR",
+      "title": "Retirar em Ponto Parceiro",
+      "data": {
+        "partners": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              }
+            }
+          },
+          "__example__": [
+            {
+              "id": "bar_do_zeca",
+              "title": "Bar do Zeca — Rua XPTO, 123"
+            },
+            {
+              "id": "emporio_da_cerva",
+              "title": "Empório da Cerva — Av. ABC, 456"
+            }
+          ]
+        },
+        "pickup_items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              }
+            }
+          },
+          "__example__": [
+            {
+              "id": "growler_pilsen",
+              "title": "Growler Pilsen 1L — R$ 15"
+            },
+            {
+              "id": "growler_ipa",
+              "title": "Growler IPA 1L — R$ 18"
+            }
+          ]
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "pickup_form",
+            "children": [
+              {
+                "type": "TextSubheading",
+                "text": "Escolha o ponto e o item para retirada"
+              },
+              {
+                "type": "RadioButtonsGroup",
+                "name": "partner",
+                "label": "Ponto Parceiro",
+                "required": true,
+                "data-source": "${data.partners}"
+              },
+              {
+                "type": "RadioButtonsGroup",
+                "name": "pickup_item",
+                "label": "Item para retirar",
+                "required": true,
+                "data-source": "${data.pickup_items}"
+              },
+              {
+                "type": "Footer",
+                "label": "Confirmar retirada",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": {
+                    "type": "screen",
+                    "name": "PICKUP_CONFIRM"
+                  },
+                  "payload": {
+                    "partner": "${form.partner}",
+                    "pickup_item": "${form.pickup_item}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "PICKUP_CONFIRM",
+      "title": "Confirme sua Retirada",
+      "data": {},
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "pickup_confirm_form",
+            "children": [
+              {
+                "type": "TextBody",
+                "text": "Ao chegar ao ponto parceiro, informe seu nome e este pedido."
+              },
+              {
+                "type": "Footer",
+                "label": "Concluir",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": {
+                    "type": "screen",
+                    "name": "SUMMARY"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "SUMMARY",
+      "title": "Resumo e Confirmação",
+      "terminal": true,
+      "success": true,
+      "data": {
+        "order_id": {
+          "type": "string",
+          "__example__": "MB-2871"
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "summary_form",
+            "children": [
+              {
+                "type": "TextSubheading",
+                "text": "🎉 Pedido recebido! Você receberá atualizações no WhatsApp."
+              },
+              {
+                "type": "Footer",
+                "label": "Finalizar",
+                "on-click-action": {
+                  "name": "complete",
+                  "payload": {
+                    "menu": "",
+                    "growler": "",
+                    "qtde": "",
+                    "hub": "",
+                    "cep": "",
+                    "payment": "",
+                    "barrel_choice": "",
+                    "event_date": "",
+                    "event_people": "",
+                    "event_address": "",
+                    "pickup_partner": "",
+                    "pickup_item": ""
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
