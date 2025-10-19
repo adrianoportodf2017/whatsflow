@@ -807,7 +807,18 @@ export const getNextScreen = async (decryptedBody) => {
         }
         // Troca de dados entre telas
         if (action === "data_exchange") {
-            switch (screen) {
+
+
+            // ===== DETECTAR TELA PELA PRESENÇA DE CAMPOS =====
+    let currentScreen = screen;
+    
+    // Se não veio screen, detecta pela estrutura dos dados
+    if (!currentScreen) {
+        if (data?.product_id && data?.quantity && !data?.action) {
+            currentScreen = "PRODUCT_DETAIL";
+        }
+    }
+            switch (currentScreen) {
                 // ===== TELA INICIAL =====
                 case "WELCOME":
                     const menuChoice = data?.main_menu;
