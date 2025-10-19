@@ -465,15 +465,13 @@ export const getNextScreen = async (decryptedBody) => {
         }
 
         if (action === "data_exchange") {
-            let currentScreen = screen;
 
-            // ✅ CORRIGIDO: Detectar tela pela estrutura dos dados
-            if (!currentScreen && data?.product_id && data?.quantity) {
-                if (data?.action === "add_to_cart") {
-                    currentScreen = "PRODUCT_DETAIL";
-                }
+            let currentScreen = screen || data?.NEXT || data?.next;
+
+            // Se não veio, detecta pela estrutura
+            if (!currentScreen && data?.product_id && data?.quantity && data?.action === "add_to_cart") {
+                currentScreen = "PRODUCT_DETAIL";
             }
-
             console.log(`📍 Tela detectada: ${currentScreen}`);
 
             switch (currentScreen) {
