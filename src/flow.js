@@ -437,6 +437,17 @@ const SCREEN_RESPONSES = {
                 confirmation_message: `Pedido ${orderId} criado com sucesso!`
             }
         };
+    },
+
+      // Tela de erro genérica
+    ERROR: (message) => {
+        return {
+            screen: "ERROR",
+            data: {
+                error_message: message || "Ocorreu um erro. Por favor, tente novamente.",
+                retry_available: true
+            }
+        };
     }
 };
 
@@ -582,16 +593,16 @@ export const getNextScreen = async (decryptedBody) => {
 
                 default:
                     console.warn(`⚠️ Tela não reconhecida: ${currentScreen}`);
-                    return SCREEN_RESPONSES.WELCOME;
+                    return SCREEN_RESPONSES.ERROR;
             }
         }
 
         console.error("❌ Ação não tratada:", { action, screen, data });
-        return SCREEN_RESPONSES.WELCOME;
+        return SCREEN_RESPONSES.ERROR;
 
     } catch (error) {
         console.error("💥 Erro no processamento:", error);
-        return SCREEN_RESPONSES.WELCOME;
+        return SCREEN_RESPONSES.ERROR;
     }
 };
 
