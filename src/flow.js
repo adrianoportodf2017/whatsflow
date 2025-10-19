@@ -430,42 +430,60 @@ const SCREEN_RESPONSES = {
         let cart_notice = null;
 
         // Adicionar novo item ao carrinho
+        // Adicionar novo item ao carrinho
         if (data?.action === "add_to_cart" && data?.product_id && data?.quantity) {
             const product = getProductById(parseInt(data.product_id));
             if (product) {
-                const requested = parsePositiveInt(data.quantity) || 0;
-                const existingIndex = cartItems.findIndex(i => i.product_id === product.id);
-                const current = existingIndex >= 0 ? cartItems[existingIndex].quantity : 0;
-                const maxStock = parseInt(product.stock, 10) || 0;
+                const requested = Math.max(1, parseInt(data.quantity));
+                const existingIndex = cartItems.findIndex(item => item.product_id === product.id);
+                const existingQty = existingIndex >= 0 ? cartItems[existingIndex].quantity : 0;
 
-                // quantidade final não pode ultrapassar o estoque
-                const desired = current + requested;
-                const finalQty = Math.min(desired, maxStock);
+                // estoque remanescente considerando o que já está no carrinho
+                const available = Math.max(0, product.stock - existingQty);
+                let qtyToAdd = Math.min(requested, available);
 
-                if (finalQty <= 0) {
-                    // sem estoque
-                    cart_notice = "Este produto está indisponível no momento.";
+                if (available <= 0) {
+                    // sem estoque remanescente — não adiciona
+                    // segue para render do carrinho com aviso
+                    return {
+                        screen: "CART",
+                        data: {
+                            cart_items: cartItems,
+                            items_display: cartItems.map(item => ({
+                                id: item.product_id.toString(),
+                                title: `${item.name} (${item.quantity}x)`,
+                                description: `R$ ${item.unit_price.toFixed(2).replace('.', ',')} cada | Total: R$ ${item.subtotal.toFixed(2).replace('.', ',')}`
+                            })),
+                            is_empty: cartItems.length === 0,
+                            ...calculateCartTotals(cartItems),
+                            formatted_subtotal: calculateCartTotals(cartItems).formattedSubtotal,
+                            items_count: calculateCartTotals(cartItems).itemsCount,
+                            cart_notice: "Este item atingiu o limite de estoque no carrinho."
+                        }
+                    };
+                }
+
+                // adiciona (ou ajusta) respeitando estoque
+                if (existingIndex >= 0) {
+                    cartItems[existingIndex].quantity += qtyToAdd;
+                    cartItems[existingIndex].subtotal = cartItems[existingIndex].quantity * cartItems[existingIndex].unit_price;
                 } else {
-                    if (finalQty < desired) {
-                        cart_notice = `Quantidade ajustada para ${finalQty} (estoque máximo).`;
-                    }
+                    cartItems.push({
+                        product_id: product.id,
+                        name: product.name,
+                        unit_price: product.price,
+                        quantity: qtyToAdd,
+                        subtotal: product.price * qtyToAdd
+                    });
+                }
 
-                    if (existingIndex >= 0) {
-                        cartItems[existingIndex].quantity = finalQty;
-                        cartItems[existingIndex].subtotal = finalQty * cartItems[existingIndex].unit_price;
-                    } else {
-                        cartItems.push({
-                            product_id: product.id,
-                            name: product.name,
-                            unit_price: product.price,
-                            quantity: finalQty,
-                            subtotal: product.price * finalQty
-                        });
-                    }
+                // se limitou, avisa
+                if (qtyToAdd < requested) {
+                    data.cart_notice = `Quantidade ajustada para ${qtyToAdd} (estoque máximo disponível).`;
                 }
             }
         }
-         // Atualizar quantidade de item
+        // Atualizar quantidade de item
         if (data?.action === "update_quantity" && data?.item_id) {
             const itemIndex = cartItems.findIndex(item => item.product_id === parseInt(data.item_id));
             if (itemIndex >= 0) {
@@ -490,16 +508,12 @@ const SCREEN_RESPONSES = {
             screen: "CART",
             data: {
                 cart_items: cartItems,
-                items_display: cartItems.map(item => ({
-                    id: item.product_id.toString(),
-                    title: `${item.name} (${item.quantity}x)`,
-                    description: `R$ ${item.unit_price.toFixed(2).replace('.', ',')} cada | Total: R$ ${item.subtotal.toFixed(2).replace('.', ',')}`
-                })),
+                items_display: cartItems.map(/* ... */),
                 is_empty: cartItems.length === 0,
                 subtotal: totals.subtotal,
                 formatted_subtotal: totals.formattedSubtotal,
                 items_count: totals.itemsCount,
-                cart_notice: cart_notice
+                cart_notice: data?.cart_notice || null
             }
         };
     },
