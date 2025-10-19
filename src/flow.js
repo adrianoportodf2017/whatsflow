@@ -391,8 +391,8 @@ const SCREEN_RESPONSES = {
             return {
                 screen: "ERROR",
                 data: {
-                    message: "Produto não encontrado",
-                    cart_items: cartItems
+                    error_message: "Produto não encontrado",
+                    retry_available: true
                 }
             };
         }
@@ -402,34 +402,27 @@ const SCREEN_RESPONSES = {
         return {
             screen: "PRODUCT_DETAIL",
             data: {
-                product: {
-                    id: product.id,
-                    name: product.name,
-                    price: product.price,
-                    formatted_price: `R$ ${product.price.toFixed(2).replace('.', ',')}`,
-                    description: product.description,
-                    sku: product.sku,
-                    formatted_stock: available > 0 ? `${available} unidades disponíveis` : "Indisponível",
-                    stock: parseInt(product.stock, 10) || 0
-                },
-                // você não usa mais no front, mas manter é inofensivo:
-                quantity_options: [],
-                // suporte para UX de erro/rehidratação
-                error_message: data?.error_message || null,
-                last_quantity: data?.quantity || null,
-
-                cart_items: cartItems,
-                cart_count: cartItems.reduce((sum, item) => sum + item.quantity, 0)
+                // Propriedades separadas (não objeto aninhado)
+                product_id: product.id,
+                product_name: product.name,
+                product_price: `R$ ${product.price.toFixed(2).replace('.', ',')}`,
+                product_description: product.description,
+                product_sku: product.sku,
+                product_stock: available > 0
+                    ? `${available} unidades disponíveis`
+                    : "Indisponível",
+                error_message: data?.error_message || "",
+                cart_items: cartItems
             }
         };
     },
 
+
     // Carrinho de compras
     CART: (data) => {
         let cartItems = data?.cart_items || [];
-        let cart_notice = null;
+        let cart_notice = "";
 
-        // Adicionar novo item ao carrinho
         // Adicionar novo item ao carrinho
         if (data?.action === "add_to_cart" && data?.product_id && data?.quantity) {
             const product = getProductById(parseInt(data.product_id));
@@ -438,53 +431,34 @@ const SCREEN_RESPONSES = {
                 const existingIndex = cartItems.findIndex(item => item.product_id === product.id);
                 const existingQty = existingIndex >= 0 ? cartItems[existingIndex].quantity : 0;
 
-                // estoque remanescente considerando o que já está no carrinho
                 const available = Math.max(0, product.stock - existingQty);
                 let qtyToAdd = Math.min(requested, available);
 
                 if (available <= 0) {
-                    // sem estoque remanescente — não adiciona
-                    // segue para render do carrinho com aviso
-                    return {
-                        screen: "CART",
-                        data: {
-                            cart_items: cartItems,
-                            items_display: cartItems.map(item => ({
-                                id: item.product_id.toString(),
-                                title: `${item.name} (${item.quantity}x)`,
-                                description: `R$ ${item.unit_price.toFixed(2).replace('.', ',')} cada | Total: R$ ${item.subtotal.toFixed(2).replace('.', ',')}`
-                            })),
-                            is_empty: cartItems.length === 0,
-                            ...calculateCartTotals(cartItems),
-                            formatted_subtotal: calculateCartTotals(cartItems).formattedSubtotal,
-                            items_count: calculateCartTotals(cartItems).itemsCount,
-                            cart_notice: "Este item atingiu o limite de estoque no carrinho."
-                        }
-                    };
-                }
-
-                // adiciona (ou ajusta) respeitando estoque
-                if (existingIndex >= 0) {
-                    cartItems[existingIndex].quantity += qtyToAdd;
-                    cartItems[existingIndex].subtotal = cartItems[existingIndex].quantity * cartItems[existingIndex].unit_price;
+                    cart_notice = "Este item atingiu o limite de estoque no carrinho.";
                 } else {
-                    cartItems.push({
-                        product_id: product.id,
-                        name: product.name,
-                        unit_price: product.price,
-                        quantity: qtyToAdd,
-                        subtotal: product.price * qtyToAdd
-                    });
-                }
+                    if (existingIndex >= 0) {
+                        cartItems[existingIndex].quantity += qtyToAdd;
+                        cartItems[existingIndex].subtotal = cartItems[existingIndex].quantity * cartItems[existingIndex].unit_price;
+                    } else {
+                        cartItems.push({
+                            product_id: product.id,
+                            name: product.name,
+                            unit_price: product.price,
+                            quantity: qtyToAdd,
+                            subtotal: product.price * qtyToAdd
+                        });
+                    }
 
-                // se limitou, avisa
-                if (qtyToAdd < requested) {
-                    data.cart_notice = `Quantidade ajustada para ${qtyToAdd} (estoque máximo disponível).`;
+                    if (qtyToAdd < requested) {
+                        cart_notice = `Quantidade ajustada para ${qtyToAdd} (estoque máximo disponível).`;
+                    }
                 }
             }
         }
+
         // Atualizar quantidade de item
-        if (data?.action === "update_quantity" && data?.item_id) {
+        if (data?.action === "update_quantity" && data?.item_id && data?.new_quantity) {
             const itemIndex = cartItems.findIndex(item => item.product_id === parseInt(data.item_id));
             if (itemIndex >= 0) {
                 const newQuantity = parseInt(data.new_quantity);
@@ -508,16 +482,25 @@ const SCREEN_RESPONSES = {
             screen: "CART",
             data: {
                 cart_items: cartItems,
-                items_display: cartItems.map(/* ... */),
+                items_display: cartItems.map(item => ({
+                    id: item.product_id.toString(),
+                    title: `${item.name} (${item.quantity}x)`,
+                    description: `R$ ${item.unit_price.toFixed(2).replace('.', ',')} cada | Total: R$ ${item.subtotal.toFixed(2).replace('.', ',')}`
+                })),
+                actions: [
+                    { id: "update_quantity", title: "✏️ Atualizar quantidade" },
+                    { id: "remove_item", title: "🗑️ Remover item" },
+                    { id: "continue_shopping", title: "🛍️ Continuar comprando" },
+                    { id: "checkout", title: "✅ Finalizar pedido" }
+                ],
                 is_empty: cartItems.length === 0,
                 subtotal: totals.subtotal,
                 formatted_subtotal: totals.formattedSubtotal,
                 items_count: totals.itemsCount,
-                cart_notice: data?.cart_notice || null
+                cart_notice: cart_notice
             }
         };
     },
-
     // Dados do cliente
     CUSTOMER_DATA: (data) => {
         const cartItems = data?.cart_items || [];
@@ -645,7 +628,6 @@ const SCREEN_RESPONSES = {
         };
     },
 
-    // Revisão do pedido
     ORDER_REVIEW: (data) => {
         const cartItems = data?.cart_items || [];
         const totals = calculateCartTotals(cartItems);
@@ -663,48 +645,26 @@ const SCREEN_RESPONSES = {
         return {
             screen: "ORDER_REVIEW",
             data: {
-                // Resumo do pedido
-                order_summary: {
-                    items: cartItems.map(item => ({
-                        name: item.name,
-                        quantity: item.quantity,
-                        price: `R$ ${item.subtotal.toFixed(2).replace('.', ',')}`
-                    })),
-                    subtotal: `R$ ${totals.subtotal.toFixed(2).replace('.', ',')}`,
-                    shipping: shippingOption?.name || "N/A",
-                    shipping_price: `R$ ${shippingPrice.toFixed(2).replace('.', ',')}`,
-                    payment_method: paymentMethod?.name || "N/A",
-                    discount: discount > 0 ? `${discount}% - R$ ${discountAmount.toFixed(2).replace('.', ',')}` : "Sem desconto",
-                    total: `R$ ${total.toFixed(2).replace('.', ',')}`
-                },
+                // Campos individuais para o layout
+                order_subtotal: `R$ ${totals.subtotal.toFixed(2).replace('.', ',')}`,
+                order_shipping: shippingOption?.name || "N/A",
+                order_shipping_price: `R$ ${shippingPrice.toFixed(2).replace('.', ',')}`,
+                order_payment: paymentMethod?.name || "N/A",
+                order_discount: discount > 0
+                    ? `${discount}% - R$ ${discountAmount.toFixed(2).replace('.', ',')}`
+                    : "Sem desconto",
+                order_total: `R$ ${total.toFixed(2).replace('.', ',')}`,
 
-                // Dados do cliente
-                customer_summary: {
-                    name: data?.customer_data?.name,
-                    phone: data?.customer_data?.phone,
-                    email: data?.customer_data?.email || "Não informado",
-                    document: data?.customer_data?.document || "Não informado"
-                },
+                customer_name: data?.customer_data?.name || "",
+                customer_phone: data?.customer_data?.phone || "",
+                customer_email: data?.customer_data?.email || "Não informado",
 
-                // Endereço (se houver)
-                address_summary: shippingOption?.id !== 1 ? {
-                    street: data?.shipping_address?.street,
-                    number: data?.shipping_address?.number,
-                    complement: data?.shipping_address?.complement || "N/A",
-                    neighborhood: data?.shipping_address?.neighborhood,
-                    city: data?.shipping_address?.city,
-                    state: data?.shipping_address?.state,
-                    zip: data?.shipping_address?.zip
-                } : null,
-
-                // Dados completos para finalização
+                // Dados completos para o payload
                 cart_items: cartItems,
                 customer_data: data?.customer_data || {},
                 shipping_option: data?.shipping_option || {},
                 shipping_address: data?.shipping_address || {},
-                payment_method: data?.payment_method,
-
-                // Valores finais
+                payment_method: data?.payment_method || "",
                 subtotal: totals.subtotal,
                 shipping_amount: shippingPrice,
                 discount_amount: discountAmount,
@@ -715,24 +675,10 @@ const SCREEN_RESPONSES = {
 
     // Confirmação final do pedido
     ORDER_COMPLETE: async (data) => {
-        // Simular criação do pedido
         const orderId = generateOrderId();
-        const cartItems = data?.cart_items || [];
-        const totals = calculateCartTotals(cartItems);
-        const shippingPrice = parseFloat(data?.shipping_amount) || 0;
-        const discountAmount = parseFloat(data?.discount_amount) || 0;
-        const totalAmount = totals.subtotal + shippingPrice - discountAmount;
-
-        // Aqui você faria a chamada real para sua API
-        // const order = await apiClient.createOrder({...});
-
-        // Simular delay de processamento
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Gerar link de pagamento fictício
+        const totalAmount = parseFloat(data?.total_amount) || 0;
         const paymentLink = `https://pay.exemplo.com/checkout/${orderId}`;
 
-        // Mensagem baseada no método de pagamento
         let paymentInstructions = "";
         switch (data?.payment_method) {
             case "pix":
@@ -749,26 +695,18 @@ const SCREEN_RESPONSES = {
                 paymentInstructions = "📧 Você receberá as instruções de pagamento por email.";
         }
 
+        // Simular delay de processamento
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         return {
             screen: "ORDER_COMPLETE",
             data: {
                 success: true,
-                order_id: orderId,
                 order_number: orderId,
                 payment_link: paymentLink,
                 payment_instructions: paymentInstructions,
-                total_amount: totalAmount,
                 formatted_total: `R$ ${totalAmount.toFixed(2).replace('.', ',')}`,
-
-                // Mensagem de confirmação
-                confirmation_message: `✅ Pedido ${orderId} criado com sucesso!\n\n${paymentInstructions}\n\nTotal: R$ ${totalAmount.toFixed(2).replace('.', ',')}\n\nVocê receberá atualizações do seu pedido por WhatsApp.`,
-
-                // Limpar dados para novo pedido
-                cart_items: [],
-                customer_data: {},
-                shipping_option: {},
-                shipping_address: {},
-                payment_method: null
+                confirmation_message: `✅ Pedido ${orderId} criado com sucesso!\n\n${paymentInstructions}\n\nTotal: R$ ${totalAmount.toFixed(2).replace('.', ',')}\n\nVocê receberá atualizações do seu pedido por WhatsApp.`
             }
         };
     },
@@ -778,7 +716,7 @@ const SCREEN_RESPONSES = {
         return {
             screen: "ERROR",
             data: {
-                error_message: message || "Ocorreu um erro. Por favor, tente novamente.",
+                error_message: typeof message === 'string' ? message : "Ocorreu um erro. Por favor, tente novamente.",
                 retry_available: true
             }
         };
@@ -863,7 +801,6 @@ export const getNextScreen = async (decryptedBody) => {
                     break;
 
                 // ===== DETALHES DO PRODUTO =====
-                // ===== DETALHES DO PRODUTO =====
                 case "PRODUCT_DETAIL":
                     if (data?.action === "add_to_cart") {
                         const productId = parseInt(data.product_id);
@@ -899,27 +836,21 @@ export const getNextScreen = async (decryptedBody) => {
                             product_id: String(productId),
                             quantity: String(qty)
                         });
-                    } else if (data?.action === "back_to_products") {
-                        return SCREEN_RESPONSES.CATALOG_PRODUCTS(data);
                     }
                     break;
 
-                // ===== CARRINHO =====
                 case "CART":
                     if (data?.action === "continue_shopping") {
                         return SCREEN_RESPONSES.CATALOG_CATEGORIES(data);
                     } else if (data?.action === "checkout") {
-                        // Verificar se tem itens no carrinho
                         if (!data?.cart_items || data.cart_items.length === 0) {
                             return SCREEN_RESPONSES.ERROR("Seu carrinho está vazio!");
                         }
                         return SCREEN_RESPONSES.CUSTOMER_DATA(data);
                     } else if (data?.action === "update_quantity" || data?.action === "remove_item") {
-                        // Atualizar carrinho
                         return SCREEN_RESPONSES.CART(data);
                     }
                     break;
-
                 // ===== DADOS DO CLIENTE =====
                 case "CUSTOMER_DATA":
                     if (data?.action === "continue") {
