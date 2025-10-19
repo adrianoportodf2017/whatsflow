@@ -763,7 +763,48 @@ export const getNextScreen = async (decryptedBody) => {
             console.info("🛒 Iniciando E-commerce Flow");
             return SCREEN_RESPONSES.WELCOME;
         }
+  // ===== IMPORTANTE: Tratar navigate (quando não vem screen) =====
+        if (action === "navigate" || !screen) {
+            // Quando usa navigate no flow, detecta pela ação nos dados
+            if (data?.action === "add_to_cart") {
+                console.log("📦 Processando add_to_cart via navigate");
+                
+                const productId = parseInt(data.product_id);
+                const qty = parsePositiveInt(data.quantity);
+                const cartItems = data?.cart_items || [];
+                const available = getAvailableStock(productId, cartItems);
 
+                if (!qty) {
+                    return SCREEN_RESPONSES.PRODUCT_DETAIL({
+                        ...data,
+                        error_message: "Quantidade inválida. Digite um número inteiro maior que zero."
+                    });
+                }
+
+                if (available <= 0) {
+                    return SCREEN_RESPONSES.PRODUCT_DETAIL({
+                        ...data,
+                        error_message: "Produto sem estoque disponível."
+                    });
+                }
+
+                if (qty > available) {
+                    return SCREEN_RESPONSES.PRODUCT_DETAIL({
+                        ...data,
+                        error_message: `Quantidade acima do estoque. Disponível: ${available}.`
+                    });
+                }
+
+                // válido → adiciona ao carrinho
+                console.log(`✅ Adicionando ${qty}x produto ${productId} ao carrinho`);
+                return SCREEN_RESPONSES.CART({
+                    ...data,
+                    action: "add_to_cart",
+                    product_id: String(productId),
+                    quantity: String(qty)
+                });
+            }
+        }
         // Troca de dados entre telas
         if (action === "data_exchange") {
             switch (screen) {
