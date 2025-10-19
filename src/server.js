@@ -1,8 +1,8 @@
 /**
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
+ * Este código é licenciado sob a licença MIT encontrada no
+ * arquivo LICENSE no diretório raiz deste código fonte.
  */
 
 import express from "express";
@@ -14,9 +14,12 @@ const app = express();
 
 app.use(
   express.json({
-    // store the raw request body to use it for signature verification
+    // armazena o corpo raw da requisição para usar na verificação de assinatura
     verify: (req, res, buf, encoding) => {
-      req.rawBody = buf?.toString(encoding || "utf8");
+      if (buf && buf.length) {
+        req.rawBody = buf.toString(encoding || "utf8");
+        console.log("📦 Raw body armazenado para verificação:", req.rawBody?.substring(0, 200) + "...");
+      }
     },
   }),
 );
@@ -24,24 +27,28 @@ app.use(
 const { APP_SECRET, PRIVATE_KEY, PASSPHRASE = "", PORT = "3000" } = process.env;
 
 /*
-Example:
-```-----[REPLACE THIS] BEGIN RSA PRIVATE KEY-----
+Exemplo:
+```-----[SUBSTITUA ISSO] BEGIN RSA PRIVATE KEY-----
 MIIE...
 ...
 ...AQAB
------[REPLACE THIS] END RSA PRIVATE KEY-----```
+-----[SUBSTITUA ISSO] END RSA PRIVATE KEY-----```
 */
 
 app.post("/", async (req, res) => {
+  console.log("📨 Cabeçalhos da requisição recebidos:", req.headers);
+  console.log("🔐 Cabeçalho de assinatura:", req.get("x-hub-signature-256"));
+  console.log("📝 Tamanho do corpo da requisição:", req.body?.length);
+
   if (!PRIVATE_KEY) {
     throw new Error(
-      'Private key is empty. Please check your env variable "PRIVATE_KEY".'
+      'Chave privada está vazia. Por favor verifique sua variável de ambiente "PRIVATE_KEY".'
     );
   }
 
   if(!isRequestSignatureValid(req)) {
-    // Return status code 432 if request signature does not match.
-    // To learn more about return error codes visit: https://developers.facebook.com/docs/whatsapp/flows/reference/error-codes#endpoint_error_codes
+    // Retorna código 432 se a assinatura não corresponder
+    // Para aprender mais sobre códigos de erro: https://developers.facebook.com/docs/whatsapp/flows/reference/error-codes#endpoint_error_codes
     return res.status(432).send();
   }
 
@@ -49,7 +56,7 @@ app.post("/", async (req, res) => {
   try {
     decryptedRequest = decryptRequest(req.body, PRIVATE_KEY, PASSPHRASE);
   } catch (err) {
-    console.error(err);
+    console.error("❌ Erro ao descriptografar:", err);
     if (err instanceof FlowEndpointException) {
       return res.status(err.statusCode).send();
     }
@@ -57,16 +64,16 @@ app.post("/", async (req, res) => {
   }
 
   const { aesKeyBuffer, initialVectorBuffer, decryptedBody } = decryptedRequest;
-  console.log("💬 Decrypted Request:", decryptedBody);
+  console.log("💬 Requisição Descriptografada:", decryptedBody);
 
-  // TODO: Uncomment this block and add your flow token validation logic.
-  // If the flow token becomes invalid, return HTTP code 427 to disable the flow and show the message in `error_msg` to the user
-  // Refer to the docs for details https://developers.facebook.com/docs/whatsapp/flows/reference/error-codes#endpoint_error_codes
+  // TODO: Descomente este bloco e adicione sua lógica de validação do flow token
+  // Se o flow token se tornar inválido, retorne código HTTP 427 para desativar o flow e mostrar a mensagem em `error_msg` para o usuário
+  // Consulte a documentação para detalhes: https://developers.facebook.com/docs/whatsapp/flows/reference/error-codes#endpoint_error_codes
 
   /*
   if (!isValidFlowToken(decryptedBody.flow_token)) {
     const error_response = {
-      error_msg: `The message is no longer available`,
+      error_msg: `A mensagem não está mais disponível`,
     };
     return res
       .status(427)
@@ -77,35 +84,63 @@ app.post("/", async (req, res) => {
   */
 
   const screenResponse = await getNextScreen(decryptedBody);
-  console.log("👉 Response to Encrypt:", screenResponse);
+  console.log("👉 Resposta para Criptografar:", screenResponse);
 
   res.send(encryptResponse(screenResponse, aesKeyBuffer, initialVectorBuffer));
 });
 
 app.get("/", (req, res) => {
-  res.send(`<pre>Ambiente mafia Beer</pre>`);
+  res.send(`<pre>Ambiente Mafia Beer 🍺</pre>`);
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is listening on port: ${PORT}`);
+  console.log(`🚀 Servidor rodando na porta: ${PORT}`);
 });
 
 function isRequestSignatureValid(req) {
   if(!APP_SECRET) {
-    console.warn("App Secret is not set up. Please Add your app secret in /.env file to check for request validation");
+    console.warn("⚠️ App Secret não está configurado. Por favor adicione seu app secret no arquivo /.env para verificar a validação de requisição");
     return true;
   }
 
   const signatureHeader = req.get("x-hub-signature-256");
-  const signatureBuffer = Buffer.from(signatureHeader.replace("sha256=", ""), "utf-8");
-
-  const hmac = crypto.createHmac("sha256", APP_SECRET);
-  const digestString = hmac.update(req.rawBody).digest('hex');
-  const digestBuffer = Buffer.from(digestString, "utf-8");
-
-  if ( !crypto.timingSafeEqual(digestBuffer, signatureBuffer)) {
-    console.error("Error: Request Signature did not match");
+  
+  // Verifica se a assinatura existe
+  if (!signatureHeader) {
+    console.error("❌ Erro: cabeçalho x-hub-signature-256 está faltando");
     return false;
   }
-  return true;
+
+  // Verifica se o rawBody existe
+  if (!req.rawBody) {
+    console.error("❌ Erro: rawBody está faltando");
+    return false;
+  }
+
+  try {
+    const signature = signatureHeader.replace("sha256=", "");
+    const signatureBuffer = Buffer.from(signature, "hex"); // CORREÇÃO: Use 'hex' em vez de 'utf-8'
+    
+    const hmac = crypto.createHmac("sha256", APP_SECRET);
+    const digest = hmac.update(req.rawBody).digest('hex');
+    const digestBuffer = Buffer.from(digest, "hex"); // CORREÇÃO: Use 'hex' em vez de 'utf-8'
+
+    console.log("🔍 Assinatura recebida:", signature);
+    console.log("🔍 Assinatura calculada:", digest);
+
+    const isValid = crypto.timingSafeEqual(digestBuffer, signatureBuffer);
+    
+    if (!isValid) {
+      console.error("❌ Erro: Assinatura da Requisição não corresponde");
+      console.error("📤 Esperado:", digest);
+      console.error("📥 Recebido:", signature);
+    } else {
+      console.log("✅ Assinatura validada com sucesso!");
+    }
+    
+    return isValid;
+  } catch (error) {
+    console.error("💥 Erro validando assinatura:", error);
+    return false;
+  }
 }
