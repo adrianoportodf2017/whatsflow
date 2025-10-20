@@ -375,24 +375,56 @@ export const getNextScreen = async (decryptedBody) => {
           
           return SCREEN_RESPONSES.CART(data);
 
-        case "update_cart":
-          console.log("📂 Step: update_cart");
-          // TODO: Implementar lógica de atualização do carrinho
-          // Por enquanto só redireciona baseado no next_action
-          
-          if (data?.next_action === "continue_shopping") {
-            return SCREEN_RESPONSES.CATALOG_CATEGORIES(data);
-          } else if (data?.next_action === "finish") {
-            // Vai pra tela terminal
-            return {
-              screen: "CART_FINISH",
-              data: {
-                message: "Obrigado pela compra!"
-              }
-            };
-          }
-          
-          return SCREEN_RESPONSES.CART(data);
+          case "update_cart":
+            console.log("📂 Step: update_cart");
+            
+            const quantities = data?.quantities || "";
+            let updatedCartItems = [...(data?.cart_items || [])];
+            
+            // Parse do formato "101:3, 201:1"
+            if (quantities) {
+              const updates = quantities.split(",").map(item => item.trim());
+              
+              updates.forEach(update => {
+                const [productIdStr, qtyStr] = update.split(":").map(s => s.trim());
+                const productId = parseInt(productIdStr, 10);
+                const newQty = parseInt(qtyStr, 10);
+                
+                if (Number.isFinite(productId) && Number.isFinite(newQty)) {
+                  const itemIndex = updatedCartItems.findIndex(item => Number(item.product_id) === productId);
+                  
+                  if (itemIndex >= 0) {
+                    if (newQty === 0) {
+                      // Remove item
+                      updatedCartItems.splice(itemIndex, 1);
+                      console.log(`🗑️ Produto ${productId} removido`);
+                    } else {
+                      // Atualiza quantidade
+                      const unitPrice = Number(updatedCartItems[itemIndex].unit_price);
+                      updatedCartItems[itemIndex].quantity = newQty;
+                      updatedCartItems[itemIndex].subtotal = newQty * unitPrice;
+                      console.log(`✅ Produto ${productId} atualizado para ${newQty}`);
+                    }
+                  }
+                }
+              });
+            }
+            
+            // Atualiza o data com o carrinho modificado
+            const updatedData = { ...data, cart_items: updatedCartItems };
+            
+            if (data?.next_action === "continue_shopping") {
+              return SCREEN_RESPONSES.CATALOG_CATEGORIES(updatedData);
+            } else if (data?.next_action === "finish") {
+              return {
+                screen: "CART_FINISH",
+                data: {
+                  message: "Pedido finalizado! Obrigado pela compra!"
+                }
+              };
+            }
+            
+            return SCREEN_RESPONSES.CART(updatedData);
 
         default:
           console.warn(`⚠️ Step não reconhecido: ${step}`);
