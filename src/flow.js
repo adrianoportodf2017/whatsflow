@@ -10,376 +10,386 @@
 import { MOCK_DATA } from './mockData.js';
 
   
-  // ==========================================
-  // FUNÇÕES AUXILIARES
-  // ==========================================
-  
-  const getProductById = (productId) => {
-    const pid = Number(productId);
-    for (const categoryProducts of Object.values(MOCK_DATA.products)) {
-      const product = categoryProducts.find((p) => Number(p.id) === pid);
-      if (product) return product;
-    }
-    return null;
+// ==========================================
+// FUNÇÕES AUXILIARES
+// ==========================================
+
+const getProductById = (productId) => {
+  const pid = Number(productId);
+  for (const categoryProducts of Object.values(MOCK_DATA.products)) {
+    const product = categoryProducts.find((p) => Number(p.id) === pid);
+    if (product) return product;
+  }
+  return null;
+};
+
+const calculateCartTotals = (cartItems) => {
+  const subtotal = (cartItems || []).reduce((sum, item) => {
+    const q = Number(item.quantity) || 0;
+    const p = Number(item.unit_price) || 0;
+    return sum + (q * p);
+  }, 0);
+
+  const itemsCount = (cartItems || []).reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+
+  return {
+    subtotal,
+    itemsCount,
+    formattedSubtotal: `R$ ${subtotal.toFixed(2).replace(".", ",")}`
   };
-  
-  const calculateCartTotals = (cartItems) => {
-    const subtotal = (cartItems || []).reduce((sum, item) => {
-      const q = Number(item.quantity) || 0;
-      const p = Number(item.unit_price) || 0;
-      return sum + (q * p);
-    }, 0);
-  
-    const itemsCount = (cartItems || []).reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
-  
+};
+
+const parsePositiveInt = (v) => {
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
+
+const getCartQty = (cartItems = [], productId) => {
+  const pid = Number(productId);
+  const found = cartItems.find((i) => Number(i.product_id) === pid);
+  return found ? parseInt(found.quantity || 0, 10) : 0;
+};
+
+const getAvailableStock = (productId, cartItems = []) => {
+  const p = getProductById(productId);
+  if (!p) return 0;
+  const inCart = getCartQty(cartItems, productId);
+  return Math.max(0, (parseInt(p.stock, 10) || 0) - inCart);
+};
+
+// ==========================================
+// RESPOSTAS DAS TELAS
+// ==========================================
+
+const SCREEN_RESPONSES = {
+  WELCOME: {
+    screen: "WELCOME",
+    data: {
+      menu_options: [
+        { id: "catalog", title: "📦 Ver Produtos" },
+        { id: "cart", title: "🛒 Meu Carrinho" }
+      ],
+      cart_items: [],
+      cart_count: 0
+    }
+  },
+
+  CATALOG_CATEGORIES: (data) => {
+    const cartItems = data?.cart_items || [];
+    const cartCount = cartItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
     return {
-      subtotal,
-      itemsCount,
-      formattedSubtotal: `R$ ${subtotal.toFixed(2).replace(".", ",")}`
-    };
-  };
-  
-  const parsePositiveInt = (v) => {
-    const n = parseInt(v, 10);
-    return Number.isFinite(n) && n > 0 ? n : null;
-  };
-  
-  const getCartQty = (cartItems = [], productId) => {
-    const pid = Number(productId);
-    const found = cartItems.find((i) => Number(i.product_id) === pid);
-    return found ? parseInt(found.quantity || 0, 10) : 0;
-  };
-  
-  const getAvailableStock = (productId, cartItems = []) => {
-    const p = getProductById(productId);
-    if (!p) return 0;
-    const inCart = getCartQty(cartItems, productId);
-    return Math.max(0, (parseInt(p.stock, 10) || 0) - inCart);
-  };
-  
-  // ==========================================
-  // RESPOSTAS DAS TELAS
-  // ==========================================
-  
-  const SCREEN_RESPONSES = {
-    WELCOME: {
-      screen: "WELCOME",
+      screen: "CATALOG_CATEGORIES",
       data: {
-        menu_options: [
-          { id: "catalog", title: "📦 Ver Produtos" },
-          { id: "cart", title: "🛒 Meu Carrinho" }
-        ],
-        cart_items: [],
-        cart_count: 0
+        categories: MOCK_DATA.categories.map((cat) => ({
+          id: String(cat.id),
+          title: cat.name,
+          description: cat.description
+        })),
+        cart_items: cartItems,
+        cart_count: cartCount
       }
-    },
-  
-    CATALOG_CATEGORIES: (data) => {
-      const cartItems = data?.cart_items || [];
-      const cartCount = cartItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+    };
+  },
+
+  CATALOG_PRODUCTS: (data) => {
+    const categoryId = parseInt(data?.category_id);
+    const cartItems = data?.cart_items || [];
+    const products = MOCK_DATA.products[categoryId] || [];
+    const category = MOCK_DATA.categories.find((c) => c.id === categoryId);
+    return {
+      screen: "CATALOG_PRODUCTS",
+      data: {
+        category_name: category?.name || "Produtos",
+        products: products.map((prod) => ({
+          id: String(prod.id),
+          title: prod.name,
+          description: `R$ ${Number(prod.price).toFixed(2).replace(".", ",")} - ${prod.description}`
+        })),
+        cart_items: cartItems,
+        cart_count: cartItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0)
+      }
+    };
+  },
+
+  PRODUCT_DETAIL: (data) => {
+    const productId = parseInt(data?.product_id);
+    const product = getProductById(productId);
+    const cartItems = data?.cart_items || [];
+
+    if (!product) {
       return {
-        screen: "CATALOG_CATEGORIES",
-        data: {
-          categories: MOCK_DATA.categories.map((cat) => ({
-            id: String(cat.id),
-            title: cat.name,
-            description: cat.description
-          })),
-          cart_items: cartItems,
-          cart_count: cartCount
-        }
+        screen: "WELCOME",
+        data: { ...SCREEN_RESPONSES.WELCOME.data }
       };
-    },
-  
-    CATALOG_PRODUCTS: (data) => {
-      const categoryId = parseInt(data?.category_id);
-      const cartItems = data?.cart_items || [];
-      const products = MOCK_DATA.products[categoryId] || [];
-      const category = MOCK_DATA.categories.find((c) => c.id === categoryId);
-      return {
-        screen: "CATALOG_PRODUCTS",
-        data: {
-          category_name: category?.name || "Produtos",
-          products: products.map((prod) => ({
-            id: String(prod.id),
-            title: prod.name,
-            description: `R$ ${Number(prod.price).toFixed(2).replace(".", ",")} - ${prod.description}`
-          })),
-          cart_items: cartItems,
-          cart_count: cartItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0)
-        }
-      };
-    },
-  
-    PRODUCT_DETAIL: (data) => {
-      const productId = parseInt(data?.product_id);
-      const product = getProductById(productId);
-      const cartItems = data?.cart_items || [];
-  
-      if (!product) {
-        return {
-          screen: "WELCOME",
-          data: { ...SCREEN_RESPONSES.WELCOME.data }
-        };
+    }
+
+    const available = getAvailableStock(productId, cartItems);
+    return {
+      screen: "PRODUCT_DETAIL",
+      data: {
+        product_id: Number(product.id),
+        product_name: product.name,
+        product_price: `R$ ${Number(product.price).toFixed(2).replace(".", ",")}`,
+        product_description: product.description,
+        product_sku: product.sku,
+        product_stock: available > 0 ? `${available} unidades disponíveis` : "Indisponível",
+        error_message: data?.error_message || "",
+        cart_items: cartItems
       }
-  
-      const available = getAvailableStock(productId, cartItems);
-      return {
-        screen: "PRODUCT_DETAIL",
-        data: {
-          product_id: Number(product.id),
-          product_name: product.name,
-          product_price: `R$ ${Number(product.price).toFixed(2).replace(".", ",")}`,
-          product_description: product.description,
-          product_sku: product.sku,
-          product_stock: available > 0 ? `${available} unidades disponíveis` : "Indisponível",
-          error_message: data?.error_message || "",
-          cart_items: cartItems
-        }
-      };
-    },
-  
-    CART: (data) => {
-      console.log("🛒 CART - Dados recebidos:", JSON.stringify(data, null, 2));
-      
-      let cartItems = Array.isArray(data?.cart_items) ? [...data.cart_items] : [];
-      let cart_notice = "";
-  
-      // ADICIONAR AO CARRINHO - Verifica se tem action de adicionar
-      if (data?.action === "add_to_cart" && data?.product_id && data?.quantity) {
-        console.log("➕ Adicionando produto ao carrinho...", {
-          product_id: data.product_id,
-          quantity: data.quantity
-        });
-  
-        const product = getProductById(parseInt(data.product_id));
-        
-        if (product) {
-          const requested = Math.max(1, Number(parseInt(data.quantity, 10)) || 0);
-          const existingIndex = cartItems.findIndex((item) => Number(item.product_id) === Number(product.id));
-          const existingQty = existingIndex >= 0 ? Number(cartItems[existingIndex].quantity) || 0 : 0;
-          const available = Math.max(0, Number(product.stock) - existingQty);
-          const qtyToAdd = Math.min(requested, available);
-  
-          console.log("📊 Cálculos:", {
-            requested,
-            existingQty,
-            available,
-            qtyToAdd,
-            existingIndex
-          });
-  
-          if (available <= 0) {
-            cart_notice = "Este item atingiu o limite de estoque no carrinho.";
-          } else {
-            if (existingIndex >= 0) {
-              // Atualiza quantidade existente
-              const newQty = existingQty + qtyToAdd;
-              const unitPrice = Number(product.price) || 0;
-              cartItems[existingIndex].quantity = newQty;
-              cartItems[existingIndex].unit_price = unitPrice;
-              cartItems[existingIndex].subtotal = newQty * unitPrice;
-              console.log("✅ Produto atualizado no carrinho");
-            } else {
-              // Adiciona novo produto
-              const unitPrice = Number(product.price) || 0;
-              const quantity = Number(qtyToAdd) || 0;
-              cartItems.push({
-                product_id: Number(product.id),
-                name: product.name,
-                unit_price: unitPrice,
-                quantity,
-                subtotal: unitPrice * quantity
-              });
-              console.log("✅ Novo produto adicionado ao carrinho");
-            }
-            
-            if (qtyToAdd < requested) {
-              cart_notice = `Quantidade ajustada para ${qtyToAdd} (estoque máximo disponível).`;
-            }
-          }
-        } else {
-          console.error("❌ Produto não encontrado:", data.product_id);
-        }
-      }
-  
-      // ATUALIZAR QUANTIDADE NO CARRINHO
-      if (data?.cart_updates && Array.isArray(data.cart_updates)) {
-        console.log("✏️ Atualizando quantidades do carrinho...");
-        
-        data.cart_updates.forEach(update => {
-          const productId = Number(update.product_id);
-          const newQty = parsePositiveInt(update.quantity);
-          const itemIndex = cartItems.findIndex(item => Number(item.product_id) === productId);
-          
-          if (itemIndex >= 0 && newQty) {
-            const product = getProductById(productId);
-            if (product) {
-              const available = Math.min(newQty, Number(product.stock));
-              const unitPrice = Number(cartItems[itemIndex].unit_price);
-              
-              cartItems[itemIndex].quantity = available;
-              cartItems[itemIndex].subtotal = available * unitPrice;
-              
-              console.log(`✅ Quantidade atualizada: Produto ${productId} -> ${available}`);
-            }
-          } else if (itemIndex >= 0 && !newQty) {
-            // Remove item se quantidade for 0 ou inválida
-            cartItems.splice(itemIndex, 1);
-            console.log(`🗑️ Item removido: Produto ${productId}`);
-          }
-        });
-      }
-  
-      const totals = calculateCartTotals(cartItems);
-  
-      console.log("📦 Carrinho final:", {
-        items: cartItems.length,
-        total: totals.formattedSubtotal
+    };
+  },
+
+  CART: (data) => {
+    console.log("🛒 CART - Dados recebidos:", JSON.stringify(data, null, 2));
+    
+    let cartItems = Array.isArray(data?.cart_items) ? [...data.cart_items] : [];
+    let cart_notice = "";
+
+    // ADICIONAR AO CARRINHO - Verifica se tem action de adicionar
+    if (data?.action === "add_to_cart" && data?.product_id && data?.quantity) {
+      console.log("➕ Adicionando produto ao carrinho...", {
+        product_id: data.product_id,
+        quantity: data.quantity
       });
-  
-      return {
-        screen: "CART",
-        data: {
-          cart_items: cartItems,
-          items_for_edit: cartItems.map((item) => ({
-            product_id: String(item.product_id),
-            name: item.name,
-            unit_price: Number(item.unit_price),
-            quantity: Number(item.quantity),
-            formatted_unit_price: `R$ ${Number(item.unit_price).toFixed(2).replace(".", ",")}`
-          })),
-          actions: [
-            { id: "continue_shopping", title: "🛍️ Continuar comprando" },
-            { id: "checkout", title: "✅ Finalizar pedido" }
-          ],
-          is_empty: cartItems.length === 0,
-          subtotal: totals.subtotal,
-          formatted_subtotal: totals.formattedSubtotal,
-          items_count: totals.itemsCount,
-          cart_notice: cart_notice,
-          subtotal_label: `Subtotal: ${totals.formattedSubtotal}`,
-          items_label: `${totals.itemsCount} ${totals.itemsCount === 1 ? 'item' : 'itens'}`
+
+      const product = getProductById(parseInt(data.product_id));
+      
+      if (product) {
+        const requested = Math.max(1, Number(parseInt(data.quantity, 10)) || 0);
+        const existingIndex = cartItems.findIndex((item) => Number(item.product_id) === Number(product.id));
+        const existingQty = existingIndex >= 0 ? Number(cartItems[existingIndex].quantity) || 0 : 0;
+        const available = Math.max(0, Number(product.stock) - existingQty);
+        const qtyToAdd = Math.min(requested, available);
+
+        console.log("📊 Cálculos:", {
+          requested,
+          existingQty,
+          available,
+          qtyToAdd,
+          existingIndex
+        });
+
+        if (available <= 0) {
+          cart_notice = "Este item atingiu o limite de estoque no carrinho.";
+        } else {
+          if (existingIndex >= 0) {
+            // Atualiza quantidade existente
+            const newQty = existingQty + qtyToAdd;
+            const unitPrice = Number(product.price) || 0;
+            cartItems[existingIndex].quantity = newQty;
+            cartItems[existingIndex].unit_price = unitPrice;
+            cartItems[existingIndex].subtotal = newQty * unitPrice;
+            console.log("✅ Produto atualizado no carrinho");
+          } else {
+            // Adiciona novo produto
+            const unitPrice = Number(product.price) || 0;
+            const quantity = Number(qtyToAdd) || 0;
+            cartItems.push({
+              product_id: Number(product.id),
+              name: product.name,
+              unit_price: unitPrice,
+              quantity,
+              subtotal: unitPrice * quantity
+            });
+            console.log("✅ Novo produto adicionado ao carrinho");
+          }
+          
+          if (qtyToAdd < requested) {
+            cart_notice = `Quantidade ajustada para ${qtyToAdd} (estoque máximo disponível).`;
+          }
         }
-      };
+      } else {
+        console.error("❌ Produto não encontrado:", data.product_id);
+      }
     }
-  };
-  
-  // ==========================================
-  // HANDLER PRINCIPAL
-  // ==========================================
-  
-  export const getNextScreen = async (decryptedBody) => {
-    const { screen, data, action } = decryptedBody || {};
-  
-    console.log(`[E-commerce Flow] Action: ${action}, Screen: ${screen || "N/A"}`);
-  
-    try {
-      if (action === "ping") {
-        return { data: { status: "active", version: "1.0.0", timestamp: new Date().toISOString() } };
+
+    // ATUALIZAR QUANTIDADE NO CARRINHO
+    if (data?.cart_updates && Array.isArray(data.cart_updates)) {
+      console.log("✏️ Atualizando quantidades do carrinho...");
+      
+      data.cart_updates.forEach(update => {
+        const productId = Number(update.product_id);
+        const newQty = parsePositiveInt(update.quantity);
+        const itemIndex = cartItems.findIndex(item => Number(item.product_id) === productId);
+        
+        if (itemIndex >= 0 && newQty) {
+          const product = getProductById(productId);
+          if (product) {
+            const available = Math.min(newQty, Number(product.stock));
+            const unitPrice = Number(cartItems[itemIndex].unit_price);
+            
+            cartItems[itemIndex].quantity = available;
+            cartItems[itemIndex].subtotal = available * unitPrice;
+            
+            console.log(`✅ Quantidade atualizada: Produto ${productId} -> ${available}`);
+          }
+        } else if (itemIndex >= 0 && !newQty) {
+          // Remove item se quantidade for 0 ou inválida
+          cartItems.splice(itemIndex, 1);
+          console.log(`🗑️ Item removido: Produto ${productId}`);
+        }
+      });
+    }
+
+    const totals = calculateCartTotals(cartItems);
+
+    console.log("📦 Carrinho final:", {
+      items: cartItems.length,
+      total: totals.formattedSubtotal
+    });
+
+    return {
+      screen: "CART",
+      data: {
+        cart_items: cartItems,
+        items_for_edit: cartItems.map((item) => ({
+          product_id: String(item.product_id),
+          name: item.name,
+          unit_price: Number(item.unit_price),
+          quantity: Number(item.quantity),
+          formatted_unit_price: `R$ ${Number(item.unit_price).toFixed(2).replace(".", ",")}`
+        })),
+        actions: [
+          { id: "continue_shopping", title: "🛍️ Continuar comprando" },
+          { id: "checkout", title: "✅ Finalizar pedido" }
+        ],
+        is_empty: cartItems.length === 0,
+        subtotal: totals.subtotal,
+        formatted_subtotal: totals.formattedSubtotal,
+        items_count: totals.itemsCount,
+        cart_notice: cart_notice,
+        subtotal_label: `Subtotal: ${totals.formattedSubtotal}`,
+        items_label: `${totals.itemsCount} ${totals.itemsCount === 1 ? 'item' : 'itens'}`
       }
-  
-      if (action === "INIT") {
-        console.info("🛒 Iniciando E-commerce Flow");
-        return SCREEN_RESPONSES.WELCOME;
-      }
-  
-      if (action === "data_exchange") {
-        const currentScreen = screen || data?.screen;
-        console.log(`📍 Tela detectada: ${currentScreen}`);
-  
-        switch (currentScreen) {
-          case "WELCOME":
-            if (data?.main_menu === "catalog") {
-              return SCREEN_RESPONSES.CATALOG_CATEGORIES(data);
-            } else if (data?.main_menu === "cart") {
-              return SCREEN_RESPONSES.CART(data);
-            }
-            return SCREEN_RESPONSES.WELCOME;
-  
-          case "CATALOG_CATEGORIES":
-            if (data?.category_id) {
-              return SCREEN_RESPONSES.CATALOG_PRODUCTS(data);
-            }
+    };
+  }
+};
+
+// ==========================================
+// HANDLER PRINCIPAL
+// ==========================================
+
+export const getNextScreen = async (decryptedBody) => {
+  const { screen, data, action } = decryptedBody || {};
+
+  console.log(`[E-commerce Flow] Action: ${action}, Step: ${data?.step || "N/A"}`);
+  console.log(`[E-commerce Flow] Data recebido:`, JSON.stringify(data, null, 2));
+
+  try {
+    if (action === "ping") {
+      return { data: { status: "active", version: "1.0.0", timestamp: new Date().toISOString() } };
+    }
+
+    if (action === "INIT") {
+      console.info("🛒 Iniciando E-commerce Flow");
+      return SCREEN_RESPONSES.WELCOME;
+    }
+
+    if (action === "data_exchange") {
+      const step = data?.step;
+      console.log(`📍 Step detectado: ${step}`);
+
+      switch (step) {
+        case "select_menu":
+          console.log("📂 Step: select_menu");
+          if (data?.main_menu === "catalog") {
             return SCREEN_RESPONSES.CATALOG_CATEGORIES(data);
-  
-          case "CATALOG_PRODUCTS":
-            if (data?.product_id) {
-              return SCREEN_RESPONSES.PRODUCT_DETAIL(data);
-            }
-            return SCREEN_RESPONSES.CATALOG_PRODUCTS(data);
-  
-          case "PRODUCT_DETAIL":
-            // Verifica se está adicionando ao carrinho
-            if (data?.action === "add_to_cart") {
-              const productId = parseInt(data.product_id, 10);
-              const qty = parsePositiveInt(data.quantity);
-              const cartItems = data?.cart_items || [];
-              const available = getAvailableStock(productId, cartItems);
-  
-              if (!qty) {
-                return SCREEN_RESPONSES.PRODUCT_DETAIL({
-                  ...data,
-                  error_message: "Quantidade inválida. Digite um número inteiro maior que zero."
-                });
-              }
-  
-              if (available <= 0) {
-                return SCREEN_RESPONSES.PRODUCT_DETAIL({
-                  ...data,
-                  error_message: "Produto sem estoque disponível."
-                });
-              }
-  
-              if (qty > available) {
-                return SCREEN_RESPONSES.PRODUCT_DETAIL({
-                  ...data,
-                  error_message: `Quantidade acima do estoque. Disponível: ${available}.`
-                });
-              }
-  
-              // Vai para o carrinho com os dados de adicionar
-              return SCREEN_RESPONSES.CART({
-                ...data,
-                action: "add_to_cart",
-                product_id: String(productId),
-                quantity: String(qty)
-              });
-            }
-  
-            return SCREEN_RESPONSES.PRODUCT_DETAIL(data);
-  
-          case "CART":
-            // Atualiza carrinho se houver updates
-            if (data?.cart_updates) {
-              return SCREEN_RESPONSES.CART(data);
-            }
-            
-            // Navegação do carrinho
-            if (data?.cart_action === "continue_shopping") {
-              return SCREEN_RESPONSES.CATALOG_CATEGORIES(data);
-            } else if (data?.cart_action === "checkout") {
-              if (!data?.cart_items || data.cart_items.length === 0) {
-                return SCREEN_RESPONSES.CATALOG_CATEGORIES(data);
-              }
-              // Por enquanto volta para categorias (você vai adicionar as outras telas depois)
-              return SCREEN_RESPONSES.CATALOG_CATEGORIES(data);
-            }
-            
+          } else if (data?.main_menu === "cart") {
             return SCREEN_RESPONSES.CART(data);
-  
-          default:
-            console.warn(`⚠️ Tela não reconhecida: ${currentScreen}`);
-            return SCREEN_RESPONSES.WELCOME;
-        }
+          }
+          return SCREEN_RESPONSES.WELCOME;
+
+        case "select_category":
+          console.log("📂 Step: select_category");
+          if (data?.category_id) {
+            return SCREEN_RESPONSES.CATALOG_PRODUCTS(data);
+          }
+          return SCREEN_RESPONSES.CATALOG_CATEGORIES(data);
+
+        case "select_product":
+          console.log("📂 Step: select_product");
+          if (data?.product_id) {
+            return SCREEN_RESPONSES.PRODUCT_DETAIL(data);
+          }
+          return SCREEN_RESPONSES.CATALOG_PRODUCTS(data);
+
+        case "add_to_cart":
+          console.log("📂 Step: add_to_cart");
+          const productId = parseInt(data.product_id, 10);
+          const qty = parsePositiveInt(data.quantity);
+          const cartItems = data?.cart_items || [];
+          const available = getAvailableStock(productId, cartItems);
+
+          console.log("🔍 Validando adição ao carrinho:", {
+            productId,
+            qty,
+            available,
+            cartItemsLength: cartItems.length
+          });
+
+          if (!qty) {
+            return SCREEN_RESPONSES.PRODUCT_DETAIL({
+              ...data,
+              error_message: "Quantidade inválida. Digite um número inteiro maior que zero."
+            });
+          }
+
+          if (available <= 0) {
+            return SCREEN_RESPONSES.PRODUCT_DETAIL({
+              ...data,
+              error_message: "Produto sem estoque disponível."
+            });
+          }
+
+          if (qty > available) {
+            return SCREEN_RESPONSES.PRODUCT_DETAIL({
+              ...data,
+              error_message: `Quantidade acima do estoque. Disponível: ${available}.`
+            });
+          }
+
+          // Vai para o carrinho com os dados de adicionar
+          console.log("✅ Validação OK, indo para CART");
+          return SCREEN_RESPONSES.CART({
+            ...data,
+            action: "add_to_cart",
+            product_id: String(productId),
+            quantity: String(qty)
+          });
+
+        case "cart_action":
+          console.log("📂 Step: cart_action");
+          
+          // Atualiza carrinho se houver updates
+          if (data?.cart_updates) {
+            return SCREEN_RESPONSES.CART(data);
+          }
+          
+          // Navegação do carrinho
+          if (data?.cart_action === "continue_shopping") {
+            return SCREEN_RESPONSES.CATALOG_CATEGORIES(data);
+          } else if (data?.cart_action === "checkout") {
+            if (!data?.cart_items || data.cart_items.length === 0) {
+              return SCREEN_RESPONSES.CATALOG_CATEGORIES(data);
+            }
+            // Por enquanto volta para categorias (você vai adicionar as outras telas depois)
+            return SCREEN_RESPONSES.CATALOG_CATEGORIES(data);
+          }
+          
+          return SCREEN_RESPONSES.CART(data);
+
+        default:
+          console.warn(`⚠️ Step não reconhecido: ${step}`);
+          return SCREEN_RESPONSES.WELCOME;
       }
-  
-      console.error("❌ Ação não tratada:", { action, screen });
-      return SCREEN_RESPONSES.WELCOME;
-    } catch (error) {
-      console.error("💥 Erro no processamento:", error);
-      return SCREEN_RESPONSES.WELCOME;
     }
-  };
-  
-  export default { getNextScreen };
+
+    console.error("❌ Ação não tratada:", { action, step: data?.step });
+    return SCREEN_RESPONSES.WELCOME;
+  } catch (error) {
+    console.error("💥 Erro no processamento:", error);
+    return SCREEN_RESPONSES.WELCOME;
+  }
+};
+
+export default { getNextScreen };
