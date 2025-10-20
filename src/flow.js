@@ -240,12 +240,20 @@ const SCREEN_RESPONSES = {
     console.log("✏️ CART_EDIT - Dados recebidos:", JSON.stringify(data, null, 2));
     
     const cartItems = data?.cart_items || [];
-
+  
+    // Gera a lista de produtos para exibir como texto
+    const productsText = cartItems.length > 0
+      ? cartItems.map(item => 
+          `${item.name}\nQuantidade atual: ${item.quantity}\nPreço: R$ ${Number(item.unit_price).toFixed(2).replace(".", ",")}`
+        ).join("\n\n")
+      : "Nenhum produto no carrinho";
+  
     return {
       screen: "CART_EDIT",
       data: {
         cart_items: cartItems,
-        edit_instructions: "Digite 0 para remover o produto. Após salvar, você poderá continuar comprando.",
+        products_summary: productsText,
+        edit_instructions: "Digite as novas quantidades abaixo. Digite 0 para remover o produto.",
         actions: [
           { id: "continue_shopping", title: "🛍️ Voltar ao catálogo" },
           { id: "finish", title: "✅ Finalizar pedido" }
@@ -253,7 +261,6 @@ const SCREEN_RESPONSES = {
       }
     };
   }
-};
 
 // ==========================================
 // HANDLER PRINCIPAL
