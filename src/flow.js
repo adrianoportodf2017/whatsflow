@@ -173,7 +173,6 @@ const SCREEN_RESPONSES = {
           cart_notice = "Este item atingiu o limite de estoque no carrinho.";
         } else {
           if (existingIndex >= 0) {
-            // Atualiza quantidade existente
             const newQty = existingQty + qtyToAdd;
             const unitPrice = Number(product.price) || 0;
             cartItems[existingIndex].quantity = newQty;
@@ -181,7 +180,6 @@ const SCREEN_RESPONSES = {
             cartItems[existingIndex].subtotal = newQty * unitPrice;
             console.log("✅ Produto atualizado no carrinho");
           } else {
-            // Adiciona novo produto
             const unitPrice = Number(product.price) || 0;
             const quantity = Number(qtyToAdd) || 0;
             cartItems.push({
@@ -203,35 +201,14 @@ const SCREEN_RESPONSES = {
       }
     }
 
-    // ATUALIZAR QUANTIDADE NO CARRINHO
-    if (data?.cart_updates && Array.isArray(data.cart_updates)) {
-      console.log("✏️ Atualizando quantidades do carrinho...");
-      
-      data.cart_updates.forEach(update => {
-        const productId = Number(update.product_id);
-        const newQty = parsePositiveInt(update.quantity);
-        const itemIndex = cartItems.findIndex(item => Number(item.product_id) === productId);
-        
-        if (itemIndex >= 0 && newQty) {
-          const product = getProductById(productId);
-          if (product) {
-            const available = Math.min(newQty, Number(product.stock));
-            const unitPrice = Number(cartItems[itemIndex].unit_price);
-            
-            cartItems[itemIndex].quantity = available;
-            cartItems[itemIndex].subtotal = available * unitPrice;
-            
-            console.log(`✅ Quantidade atualizada: Produto ${productId} -> ${available}`);
-          }
-        } else if (itemIndex >= 0 && !newQty) {
-          // Remove item se quantidade for 0 ou inválida
-          cartItems.splice(itemIndex, 1);
-          console.log(`🗑️ Item removido: Produto ${productId}`);
-        }
-      });
-    }
-
     const totals = calculateCartTotals(cartItems);
+
+    // GERAR RESUMO DOS PRODUTOS
+    const cart_summary = cartItems.length > 0 
+      ? "📦 Produtos:\n" + cartItems.map(item => 
+          `• ${item.name} (${item.quantity}x) - R$ ${Number(item.unit_price).toFixed(2).replace(".", ",")} cada`
+        ).join("\n")
+      : "Carrinho vazio";
 
     console.log("📦 Carrinho final:", {
       items: cartItems.length,
@@ -242,15 +219,10 @@ const SCREEN_RESPONSES = {
       screen: "CART",
       data: {
         cart_items: cartItems,
-        items_for_edit: cartItems.map((item) => ({
-          product_id: String(item.product_id),
-          name: item.name,
-          unit_price: Number(item.unit_price),
-          quantity: Number(item.quantity),
-          formatted_unit_price: `R$ ${Number(item.unit_price).toFixed(2).replace(".", ",")}`
-        })),
+        cart_summary: cart_summary,
         actions: [
           { id: "continue_shopping", title: "🛍️ Continuar comprando" },
+          { id: "edit_cart", title: "✏️ Editar quantidades" },
           { id: "checkout", title: "✅ Finalizar pedido" }
         ],
         is_empty: cartItems.length === 0,
@@ -260,6 +232,24 @@ const SCREEN_RESPONSES = {
         cart_notice: cart_notice,
         subtotal_label: `Subtotal: ${totals.formattedSubtotal}`,
         items_label: `${totals.itemsCount} ${totals.itemsCount === 1 ? 'item' : 'itens'}`
+      }
+    };
+  },
+
+  CART_EDIT: (data) => {
+    console.log("✏️ CART_EDIT - Dados recebidos:", JSON.stringify(data, null, 2));
+    
+    const cartItems = data?.cart_items || [];
+
+    return {
+      screen: "CART_EDIT",
+      data: {
+        cart_items: cartItems,
+        edit_instructions: "Digite 0 para remover o produto. Após salvar, você poderá continuar comprando.",
+        actions: [
+          { id: "continue_shopping", title: "🛍️ Voltar ao catálogo" },
+          { id: "finish", title: "✅ Finalizar pedido" }
+        ]
       }
     };
   }
@@ -360,9 +350,9 @@ export const getNextScreen = async (decryptedBody) => {
         case "cart_action":
           console.log("📂 Step: cart_action");
           
-          // Atualiza carrinho se houver updates
-          if (data?.cart_updates) {
-            return SCREEN_RESPONSES.CART(data);
+          // Se escolheu editar carrinho
+          if (data?.cart_action === "edit_cart") {
+            return SCREEN_RESPONSES.CART_EDIT(data);
           }
           
           // Navegação do carrinho
@@ -374,6 +364,25 @@ export const getNextScreen = async (decryptedBody) => {
             }
             // Por enquanto volta para categorias (você vai adicionar as outras telas depois)
             return SCREEN_RESPONSES.CATALOG_CATEGORIES(data);
+          }
+          
+          return SCREEN_RESPONSES.CART(data);
+
+        case "update_cart":
+          console.log("📂 Step: update_cart");
+          // TODO: Implementar lógica de atualização do carrinho
+          // Por enquanto só redireciona baseado no next_action
+          
+          if (data?.next_action === "continue_shopping") {
+            return SCREEN_RESPONSES.CATALOG_CATEGORIES(data);
+          } else if (data?.next_action === "finish") {
+            // Vai pra tela terminal
+            return {
+              screen: "CART_FINISH",
+              data: {
+                message: "Obrigado pela compra!"
+              }
+            };
           }
           
           return SCREEN_RESPONSES.CART(data);
